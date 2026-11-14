@@ -1,0 +1,39 @@
+# Hoja de proyecto · SampledHead Portal
+
+## Descripción
+Página índice (GitHub Pages) con todas las apps de SampledHead: logo arriba, una tarjeta por app (logo, nombre, descripción) que abre cada una en pestaña nueva, y enlaces a Instagram, correo y Bandcamp en el pie.
+
+## Arquitectura
+- `index.html` — estructura, pie con enlaces, versión y botón de informe.
+- `styles.css` — estética del logo: fondo naranja liso #d65f00, blanco roto, negro, tarjetas tipo sticker.
+- `app.js` — lista `APPS`, tarjetas, carga de iconos, informe de error.
+- `logo.png` — logo de SampledHead (720 px de ancho, fondo transparente).
+- `eye-white.png`, `eye-pupil.png`, `eye-lid.png` — recortes del logo original para animar el ojo (blanco del ojo sin pupila, pupila y párpado).
+- `icons/` — copia de seguridad del icono de cada app (se usa solo si no se puede leer el icono vivo).
+- `portal-standalone.html` — todo en un solo archivo (con imágenes incrustadas) para probar en local/móvil. No se sube al repo.
+
+## Iconos que se actualizan solos
+Al abrir el portal, `app.js` lee en directo el `manifest.webmanifest` de cada app (o su `logo.svg` en el caso de Sample Pack Builder), toma el icono "any" más grande y lo muestra. Si cambias el icono en una app y la subes a GitHub Pages, el portal lo muestra sin tocar nada. Orden de preferencia: icono vivo → copia en `icons/` → emoji.
+Requisitos: el portal debe estar en un dominio que pueda leer las apps (GitHub Pages envía CORS abierto, vale desde cualquier sitio). Si una app deja de declarar su icono en el manifest, el portal no se entera.
+
+## Ojo animado
+El logo no se redibuja. Encima del `logo.png` se colocan tres recortes del propio logo en su posición exacta: la pupila sigue al ratón, en móvil (o con el ratón quieto) lanza miradas sueltas y vuelve a la pose original, parpadea cada ~5,5 s y guiña al tocar el logo. El logo entero flota 7 px. Con "reducir movimiento" activado en el sistema, todo queda quieto. Si los recortes no cargan, se ve el logo fijo.
+Si se cambia el logo, hay que volver a recortar las tres capas y revisar las medidas (`EYE` en `app.js` y `.eye` en `styles.css`).
+
+## Historial de versiones
+- v1 — primera versión (3 archivos).
+- v2 — informe de error .txt, versión en pie, standalone, hoja de proyecto.
+- v3 — estética del logo real, logo de SampledHead, iconos reales de las 7 apps (extraídos de sus zips), iconos que se actualizan solos, enlaces a Instagram/correo/Bandcamp.
+
+- v4 — fondo naranja liso (sin cuadrícula), ojo del logo animado (mirada, parpadeo, flotación).
+
+## Reglas permanentes
+- Entrega en `nombre-vN.zip` con carpeta `nombre-vN`, versión visible en el pie.
+- Incluir siempre versión standalone de un solo archivo.
+- Informe de error .txt automático y botón "Descargar informe (.txt)".
+- Probar en navegador headless antes de entregar.
+
+## Límites conocidos
+- Si alguna app cambia de URL, hay que actualizar `APPS` en `app.js`.
+- El Tuner usa `Sampledhead-tuner/` (T minúscula); GitHub Pages distingue mayúsculas.
+- La lectura en vivo de iconos no se pudo probar contra GitHub desde el entorno de desarrollo (sin red); se probó simulando las respuestas.
