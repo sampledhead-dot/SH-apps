@@ -1,10 +1,10 @@
-/* SampledHead · Portal de apps · v4
+/* SampledHead · Portal de apps · v5
    Añadir una app: copia un bloque de APPS.
    Logos: cada vez que se abre el portal se lee el icono ACTUAL de cada app
    (su manifest.webmanifest o su archivo de logo). Si no se puede leer, se usa la
    copia guardada en icons/, y si tampoco, el emoji. */
 
-const VERSION = "v4";
+const VERSION = "v5";
 const BASE = "https://sampledhead-dot.github.io/";
 const MAIN_LOGO = "logo.png";
 const EYE_WHITE = "eye-white.png";
@@ -16,7 +16,7 @@ const APPS = [
   { name: "SampledHead App", url: BASE + "sampledhead-app/", manifest: "manifest.webmanifest", local: "icons/sampledhead-app.png",
     desc: "Sampler de pads en el navegador: graba, edita, haz loops y exporta a Koala, Ableton, MPC y SP-404.", emoji: "🥁" },
   { name: "CrazyHead", url: BASE + "CrazyHead/", manifest: "manifest.webmanifest", local: "icons/crazyhead.png",
-    desc: "Looper y sampler con cuatro bancos, pads, efectos, stems y exportación a WAV y MIDI.", emoji: "🌀" },
+    desc: "Sampler con generador de secuencias aleatorias, cuatro pistas y efectos.", emoji: "🌀" },
   { name: "SampledHead Editor", url: BASE + "sampledhead-editor/", manifest: "manifest.webmanifest", local: "icons/editor.png",
     desc: "Editor de audio y masterización: recorta, limpia, separa stems con IA y exporta en WAV o MP3.", emoji: "🎚️" },
   { name: "Sample Pack Builder", url: BASE + "spb-head/", liveIcon: "logo.svg", local: "icons/spb.svg",
