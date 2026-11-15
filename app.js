@@ -1,10 +1,10 @@
-/* SampledHead · Portal de apps · v5
+/* SampledHead · Portal de apps · v6
    Añadir una app: copia un bloque de APPS.
    Logos: cada vez que se abre el portal se lee el icono ACTUAL de cada app
    (su manifest.webmanifest o su archivo de logo). Si no se puede leer, se usa la
    copia guardada en icons/, y si tampoco, el emoji. */
 
-const VERSION = "v5";
+const VERSION = "v6";
 const BASE = "https://sampledhead-dot.github.io/";
 const MAIN_LOGO = "logo.png";
 const EYE_WHITE = "eye-white.png";
@@ -26,7 +26,9 @@ const APPS = [
   { name: "Chuleta Beat", url: BASE + "Chuleta-beat/", manifest: "manifest.webmanifest", local: "icons/chuleta-beat.png",
     desc: "Buscador de atajos en castellano para SP-404MKII, MPC Sample, Ableton Move y BOSS VE-22.", emoji: "📋" },
   { name: "SampledHead Tuner", url: BASE + "Sampledhead-tuner/", manifest: "manifest.webmanifest", local: "icons/tuner.png",
-    desc: "Afinador y acordes para tu instrumento, listo para usar desde el móvil.", emoji: "🎸" }
+    desc: "Afinador y acordes para tu instrumento, listo para usar desde el móvil.", emoji: "🎸" },
+  { name: "TonoPad", url: BASE + "Tono-Pad/", manifest: "manifest.webmanifest", local: "icons/tonopad.svg",
+    desc: "Detecta el tono y la escala de un audio y genera bancos de 16 pads afinados para SP-404MKII, Move, MPC Sample y Live.", emoji: "🎹" }
 ];
 
 /* ---------- Registro para el informe de error ---------- */

@@ -23,9 +23,11 @@ Si se cambia el logo, hay que volver a recortar las tres capas y revisar las med
 ## Historial de versiones
 - v1 — primera versión (3 archivos).
 - v2 — informe de error .txt, versión en pie, standalone, hoja de proyecto.
-- v3 — estética del logo real, logo de SampledHead, iconos reales de las 7 apps (extraídos de sus zips), iconos que se actualizan solos, enlaces a Instagram/correo/Bandcamp.
+- v3 — estética del logo real, logo de SampledHead, iconos reales de las 8 apps (extraídos de sus zips), iconos que se actualizan solos, enlaces a Instagram/correo/Bandcamp.
 
 - v4 — fondo naranja liso (sin cuadrícula), ojo del logo animado (mirada, parpadeo, flotación).
+- v5 — descripción de CrazyHead corregida (sampler con generador de secuencias aleatorias, cuatro pistas y efectos).
+- v6 — nueva app: TonoPad (`Tono-Pad/`, icono SVG en su manifest).
 
 ## Reglas permanentes
 - Entrega en `nombre-vN.zip` con carpeta `nombre-vN`, versión visible en el pie.
