@@ -16,6 +16,13 @@ Página índice (GitHub Pages) con todas las apps de SampledHead: logo arriba, u
 Al abrir el portal, `app.js` lee en directo el `manifest.webmanifest` de cada app (o su `logo.svg` en el caso de Sample Pack Builder), toma el icono "any" más grande y lo muestra. Si cambias el icono en una app y la subes a GitHub Pages, el portal lo muestra sin tocar nada. Orden de preferencia: icono vivo → copia en `icons/` → emoji.
 Requisitos: el portal debe estar en un dominio que pueda leer las apps (GitHub Pages envía CORS abierto, vale desde cualquier sitio). Si una app deja de declarar su icono en el manifest, el portal no se entera.
 
+## Instalación en el móvil (PWA)
+- `manifest.webmanifest`, `sw.js`, `icon-192.png`, `icon-512.png`, `icon-maskable-512.png`, `apple-touch-icon.png`.
+- Todas las rutas son relativas: funciona en la raíz del sitio o en una subcarpeta (`/mi-repo/`).
+- Requiere HTTPS (GitHub Pages lo es). No funciona abriendo el archivo en local (`file://`).
+- Android/Chrome: aparece el botón "Instalar en el móvil" y también el menú del navegador. iPhone/Safari: Compartir → Añadir a pantalla de inicio.
+- El service worker solo cachea los archivos del portal; no toca las demás apps ni la lectura en vivo de sus iconos. Al cambiar archivos del portal, subir el número de versión en `sw.js` (`C`) para forzar la actualización.
+
 ## Ojo animado
 El logo no se redibuja. Encima del `logo.png` se colocan tres recortes del propio logo en su posición exacta: la pupila sigue al ratón, en móvil (o con el ratón quieto) lanza miradas sueltas y vuelve a la pose original, parpadea cada ~5,5 s y guiña al tocar el logo. El logo entero flota 7 px. Con "reducir movimiento" activado en el sistema, todo queda quieto. Si los recortes no cargan, se ve el logo fijo.
 Si se cambia el logo, hay que volver a recortar las tres capas y revisar las medidas (`EYE` en `app.js` y `.eye` en `styles.css`).
@@ -28,6 +35,7 @@ Si se cambia el logo, hay que volver a recortar las tres capas y revisar las med
 - v4 — fondo naranja liso (sin cuadrícula), ojo del logo animado (mirada, parpadeo, flotación).
 - v5 — descripción de CrazyHead corregida (sampler con generador de secuencias aleatorias, cuatro pistas y efectos).
 - v6 — nueva app: TonoPad (`Tono-Pad/`, icono SVG en su manifest).
+- v7 — el portal ya se puede instalar en el móvil (PWA): `manifest.webmanifest`, `sw.js`, iconos 192/512/maskable/apple-touch, botón "Instalar" y aviso para iPhone.
 
 ## Reglas permanentes
 - Entrega en `nombre-vN.zip` con carpeta `nombre-vN`, versión visible en el pie.

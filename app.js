@@ -1,10 +1,10 @@
-/* SampledHead · Portal de apps · v6
+/* SampledHead · Portal de apps · v7
    Añadir una app: copia un bloque de APPS.
    Logos: cada vez que se abre el portal se lee el icono ACTUAL de cada app
    (su manifest.webmanifest o su archivo de logo). Si no se puede leer, se usa la
    copia guardada en icons/, y si tampoco, el emoji. */
 
-const VERSION = "v6";
+const VERSION = "v7";
 const BASE = "https://sampledhead-dot.github.io/";
 const MAIN_LOGO = "logo.png";
 const EYE_WHITE = "eye-white.png";
@@ -194,6 +194,34 @@ function initEye() {
   }
 }
 
+/* ---------- Instalación como app (PWA) ---------- */
+function initInstall() {
+  const standalone = (window.matchMedia && matchMedia("(display-mode: standalone)").matches) || navigator.standalone;
+  if (standalone || !/^https?:/.test(location.protocol)) return;     // ya instalada, o abierta como archivo local
+  if ("serviceWorker" in navigator) {
+    navigator.serviceWorker.register("sw.js").then(() => console.log("service worker registrado"))
+      .catch(e => console.warn("service worker no registrado: " + (e && e.message ? e.message : e)));
+  }
+  const box = document.getElementById("install");
+  const btn = document.getElementById("install-btn");
+  const ios = document.getElementById("install-ios");
+  let deferred = null;
+  window.addEventListener("beforeinstallprompt", e => {
+    e.preventDefault(); deferred = e;
+    box.hidden = false; btn.hidden = false; ios.hidden = true;
+    console.log("instalación disponible");
+  });
+  btn.addEventListener("click", async () => {
+    if (!deferred) return;
+    deferred.prompt();
+    const r = await deferred.userChoice.catch(() => ({}));
+    console.log("instalación: " + (r.outcome || "sin respuesta"));
+    deferred = null; box.hidden = true;
+  });
+  window.addEventListener("appinstalled", () => { box.hidden = true; console.log("app instalada"); });
+  if (/iphone|ipad|ipod/i.test(navigator.userAgent) && !/crios|fxios/i.test(navigator.userAgent)) { box.hidden = false; ios.hidden = false; }
+}
+
 function createCard(app) {
   const a = document.createElement("a");
   a.className = "card"; a.href = app.url; a.target = "_blank"; a.rel = "noopener";
@@ -229,5 +257,7 @@ try {
   document.getElementById("year").textContent = new Date().getFullYear();
   document.getElementById("version").textContent = VERSION;
   document.getElementById("report-btn").addEventListener("click", () => downloadReport("botón manual"));
+  step("instalación");
+  initInstall();
   step("listo");
 } catch (err) { onFail("render", err); }

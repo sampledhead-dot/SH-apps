@@ -6,7 +6,13 @@
   <title>SampledHead · Mis apps</title>
   <meta name="description" content="Todas las apps de SampledHead: samplers, editor de audio y herramientas para beatmakers.">
   <meta name="theme-color" content="#d65f00">
-  <link rel="icon" type="image/png" href="logo.png">
+  <link rel="icon" type="image/png" href="icon-192.png">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="SampledHead">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -41,7 +47,11 @@
         <span>aukan.bandcamp.com</span>
       </a>
     </nav>
-    <p class="small">© <span id="year"></span> SampledHead · Portal <strong id="version">v6</strong></p>
+    <div id="install" class="install" hidden>
+      <button id="install-btn" type="button" hidden>📲 Instalar en el móvil</button>
+      <p id="install-ios" hidden>En iPhone: pulsa <b>Compartir</b> y luego <b>Añadir a pantalla de inicio</b>.</p>
+    </div>
+    <p class="small">© <span id="year"></span> SampledHead · Portal <strong id="version">v7</strong></p>
     <button id="report-btn" type="button">Descargar informe (.txt)</button>
   </footer>
 

@@ -1,0 +1,33 @@
+{
+  "id": "sampledhead-portal",
+  "name": "SampledHead · Mis apps",
+  "short_name": "SampledHead",
+  "description": "Todas las apps de SampledHead en un solo sitio.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#d65f00",
+  "theme_color": "#d65f00",
+  "lang": "es",
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}
