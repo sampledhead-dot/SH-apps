@@ -4,13 +4,13 @@
 **Descargas:** https://github.com/sampledhead-dot/SH-apps/releases/latest
 
 ## Descripción
-Versión de escritorio (Standalone) para Windows y Mac de **todas** las apps de Sampled Head, a partir de su web.
+Versión de escritorio (Standalone) para Windows y Mac de las apps de Sampled Head, a partir de su web.
+El portal **SH-apps** (la página que reúne todas las apps) se queda solo como web: sin versión de escritorio ni plugin.
 Cada app es un programa independiente con su icono, que abre sin navegador, guarda sus ajustes y presets,
 usa el micrófono o la interfaz de audio, MIDI y descargas (WAV, ZIP…) igual que en la web.
 
 | id | App | Repositorio |
 |---|---|---|
-| `portal` | SampledHead Apps (el portal) | SH-apps |
 | `sampler` | SampledHead App | sampledhead-app |
 | `crazyhead` | CrazyHead | CrazyHead |
 | `editor` | SampledHead Editor | sampledhead-editor |
@@ -43,27 +43,28 @@ usa el micrófono o la interfaz de audio, MIDI y descargas (WAV, ZIP…) igual q
   el `package.json` de electron-builder (Windows: instalador NSIS x64; Mac: DMG universal Intel + Apple Silicon).
 - `scripts/selftest.js` — lanza la autoprueba de una app preparada o empaquetada.
 - `icons/<id>.png` — icono 1024 px de cada app (sacado de su manifest/logo en el momento de crear esta versión).
-- `../.github/workflows/desktop.yml` — compila en GitHub Actions las 10 apps × Windows/Mac y publica los instaladores
+- `../.github/workflows/desktop.yml` — compila en GitHub Actions las 9 apps × Windows/Mac y publica los instaladores
   en Releases. Se lanza al cambiar `desktop/`, cada lunes (recoge las novedades de cada app) o a mano
   (Actions → desktop → Run workflow; se puede indicar qué apps).
 
 ## Reglas permanentes
 - Versionado semántico del envoltorio en `apps.json` (`wrapperVersion`); la etiqueta de Releases es `escritorio-vX.Y.Z`.
   Cada app conserva su propia versión dentro (la que muestra su pie).
+- El portal SH-apps **no** lleva versión de escritorio ni VST: no añadirlo a `apps.json`.
 - Las apps no se modifican para el escritorio: el envoltorio se adapta a ellas. Si una app nueva se añade al portal,
   añadirla también a `apps.json` y crear `icons/<id>.png`.
-- Probar antes de entregar: autoprueba de todas las apps (`node scripts/selftest.js build/<id>`) y empaquetado de al menos una.
+- Probar antes de entregar: autoprueba de todas las apps de la lista (`node scripts/selftest.js build/<id>`) y empaquetado de al menos una.
 - Informe de error .txt automático y opción manual en el menú Ayuda.
 
 ## Historial de versiones
-- **1.0.0** (18-11-2026): primera versión. 10 apps, Windows (instalador) y Mac (DMG universal), publicación en Releases,
+- **1.0.0** (18-11-2026): primera versión. 9 apps (el portal SH-apps queda fuera por decisión: solo web), Windows (instalador) y Mac (DMG universal), publicación en Releases,
   enlace en el portal (portal v9).
 
 ## Límites conocidos
 - **Sin firma de código**: Windows muestra «Windows protegió su PC» (Más información → Ejecutar de todas formas) y Mac pide
   clic derecho → Abrir la primera vez (o `xattr -cr "/Applications/App.app"`). Firmar requiere certificados de pago
   (Apple Developer y uno de Windows).
-- **Probado solo en Linux** (autoprueba de las 10 apps con Electron real, empaquetado Linux y montaje de la app de Windows).
+- **Probado solo en Linux** (autoprueba de las apps con Electron real, empaquetado Linux y montaje de la app de Windows).
   Los instaladores de Windows y Mac se generan en GitHub Actions; no se han podido abrir en un Windows o Mac reales.
 - Las funciones que en la web descargan modelos o librerías de internet (separación de stems con IA en Editor, CrazyHead y
   Sample Pack Builder, MP3 del Editor) **siguen necesitando conexión** en escritorio.
