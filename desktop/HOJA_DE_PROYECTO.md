@@ -43,8 +43,9 @@ usa el micrófono o la interfaz de audio, MIDI y descargas (WAV, ZIP…) igual q
   el `package.json` de electron-builder (Windows: instalador NSIS x64; Mac: DMG universal Intel + Apple Silicon).
 - `scripts/selftest.js` — lanza la autoprueba de una app preparada o empaquetada.
 - `icons/<id>.png` — icono 1024 px de cada app (sacado de su manifest/logo en el momento de crear esta versión).
-- `../.github/workflows/desktop.yml` — compila en GitHub Actions las 9 apps × Windows/Mac y publica los instaladores
-  en Releases. Se lanza al cambiar `desktop/`, cada lunes (recoge las novedades de cada app) o a mano
+- `../.github/workflows/desktop.yml` — compila en GitHub Actions las 9 apps para Windows y para Mac **por separado**
+  (cada sistema publica en cuanto termina) y las sube a Releases con `scripts/release.sh`, que además retira
+  las descargas de apps que ya no estén en la lista. Se lanza al cambiar `desktop/`, cada lunes (recoge las novedades de cada app) o a mano
   (Actions → desktop → Run workflow; se puede indicar qué apps).
 
 ## Reglas permanentes
@@ -70,6 +71,9 @@ usa el micrófono o la interfaz de audio, MIDI y descargas (WAV, ZIP…) igual q
   Sample Pack Builder, MP3 del Editor) **siguen necesitando conexión** en escritorio.
 - MIDI: el permiso se concede; no se ha podido probar con un dispositivo MIDI real.
 - Cada app ocupa unos 100 MB (Windows) / 250 MB (Mac universal) porque incluye su propio Chromium.
+- **Mac**: las máquinas Mac de GitHub (`macos-latest` y `macos-15`) no se han asignado a esta cuenta el 18-11-2026
+  (los trabajos se quedan en cola). Los DMG se publicarán solos en cuanto GitHub asigne Macs; si no ocurre, revisar
+  Settings → Actions de la cuenta o compilar en un Mac propio (`desktop/README.md`).
 - Sin actualizaciones automáticas dentro del programa: las versiones nuevas se descargan de Releases.
 - Iconos: copiados en `icons/`; si una app cambia de icono hay que regenerar el suyo.
 - No es un plugin VST: las versiones VST/AU están pendientes (siguiente paso: Tuner).

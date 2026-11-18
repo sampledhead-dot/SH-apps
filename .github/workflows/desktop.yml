@@ -2,6 +2,7 @@
 # - Se ejecuta al cambiar desktop/, cada lunes (para recoger las novedades de cada app) o a mano en Actions → desktop → Run workflow.
 # - Descarga cada app de su repositorio, la empaqueta con el envoltorio de desktop/app y publica los instaladores
 #   en Releases (etiqueta escritorio-vX.Y.Z). Las apps cuyo repositorio no exista todavía se saltan con un aviso.
+# - Windows y Mac van por separado: cada uno publica en cuanto termina, sin esperar al otro.
 name: desktop
 
 on:
@@ -11,6 +12,11 @@ on:
         description: "Apps a compilar (ids separados por comas; vacío = todas). Ej.: tuner,fuzzhead"
         required: false
         default: ""
+      sistemas:
+        description: "Sistemas: windows, mac o ambos"
+        type: choice
+        options: [ambos, windows, mac]
+        default: ambos
       publicar:
         description: "Publicar los instaladores en Releases"
         type: boolean
@@ -26,37 +32,43 @@ permissions:
 
 concurrency:
   group: desktop
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   setup:
     runs-on: ubuntu-latest
     outputs:
-      matrix: ${{ steps.m.outputs.matrix }}
+      apps: ${{ steps.m.outputs.apps }}
       version: ${{ steps.m.outputs.version }}
+      windows: ${{ steps.m.outputs.windows }}
+      mac: ${{ steps.m.outputs.mac }}
     steps:
       - uses: actions/checkout@v4
       - id: m
         env:
           APPS: ${{ github.event.inputs.apps }}
+          SIS: ${{ github.event.inputs.sistemas || 'ambos' }}
         run: |
           node -e '
             const l = require("./desktop/apps.json");
             const want = (process.env.APPS || "").split(",").map(s => s.trim()).filter(Boolean);
-            const apps = l.apps.filter(a => !want.length || want.includes(a.id));
-            const include = [];
-            for (const os of ["windows-latest", "macos-15"]) for (const a of apps) include.push({ os, id: a.id, repo: a.repo });
-            require("fs").appendFileSync(process.env.GITHUB_OUTPUT, "matrix=" + JSON.stringify({ include }) + "\nversion=" + l.wrapperVersion + "\n");
+            const apps = l.apps.filter(a => !want.length || want.includes(a.id)).map(a => ({ id: a.id, repo: a.repo }));
+            const s = process.env.SIS;
+            require("fs").appendFileSync(process.env.GITHUB_OUTPUT,
+              "apps=" + JSON.stringify(apps) + "\nversion=" + l.wrapperVersion +
+              "\nwindows=" + (s !== "mac") + "\nmac=" + (s !== "windows") + "\n");
           '
 
-  build:
+  build-windows:
     needs: setup
-    name: ${{ matrix.id }} (${{ matrix.os }})
-    runs-on: ${{ matrix.os }}
+    if: needs.setup.outputs.windows == 'true'
+    name: Windows · ${{ matrix.app.id }}
+    runs-on: windows-latest
     strategy:
       fail-fast: false
       max-parallel: 10
-      matrix: ${{ fromJSON(needs.setup.outputs.matrix) }}
+      matrix:
+        app: ${{ fromJSON(needs.setup.outputs.apps) }}
     env:
       ELECTRON_SKIP_BINARY_DOWNLOAD: "1"
       CSC_IDENTITY_AUTO_DISCOVERY: "false"
@@ -71,10 +83,10 @@ jobs:
       - name: Descargar la app
         id: src
         run: |
-          if git clone --depth 1 "https://github.com/sampledhead-dot/${{ matrix.repo }}.git" "$RUNNER_TEMP/src"; then
-            echo "dir=$RUNNER_TEMP/src" >> "$GITHUB_OUTPUT"; echo "ok=true" >> "$GITHUB_OUTPUT"
+          if git clone --depth 1 "https://github.com/sampledhead-dot/${{ matrix.app.repo }}.git" "$RUNNER_TEMP/src"; then
+            echo "ok=true" >> "$GITHUB_OUTPUT"
           else
-            echo "::warning title=${{ matrix.id }}::El repositorio ${{ matrix.repo }} no existe o no es accesible; se salta."
+            echo "::warning title=${{ matrix.app.id }}::El repositorio ${{ matrix.app.repo }} no existe o no es accesible; se salta."
             echo "ok=false" >> "$GITHUB_OUTPUT"
           fi
       - name: Instalar herramientas
@@ -84,68 +96,111 @@ jobs:
       - name: Preparar
         if: steps.src.outputs.ok == 'true'
         working-directory: desktop
-        run: node scripts/prepare.js "${{ matrix.id }}" "${{ steps.src.outputs.dir }}" "build/${{ matrix.id }}"
-      - name: Empaquetar (Windows)
-        if: steps.src.outputs.ok == 'true' && runner.os == 'Windows'
-        working-directory: desktop
-        run: npx electron-builder --projectDir "build/${{ matrix.id }}" --win --publish never
-      - name: Empaquetar (Mac)
-        if: steps.src.outputs.ok == 'true' && runner.os == 'macOS'
+        run: node scripts/prepare.js "${{ matrix.app.id }}" "$RUNNER_TEMP/src" "build/${{ matrix.app.id }}"
+      - name: Empaquetar
+        if: steps.src.outputs.ok == 'true'
         working-directory: desktop
         run: |
-          # firma ad-hoc (sin certificado de Apple); si falla, sin firma
-          npx electron-builder --projectDir "build/${{ matrix.id }}" --mac --publish never \
-            || npx electron-builder --projectDir "build/${{ matrix.id }}" --mac --publish never -c.mac.identity=null
+          npx electron-builder --projectDir "build/${{ matrix.app.id }}" --win --publish never
       - uses: actions/upload-artifact@v4
         if: steps.src.outputs.ok == 'true'
         with:
-          name: ${{ matrix.id }}-${{ runner.os }}
+          name: ${{ matrix.app.id }}-windows
           path: |
-            desktop/build/${{ matrix.id }}/dist/*.exe
-            desktop/build/${{ matrix.id }}/dist/*.dmg
+            desktop/build/${{ matrix.app.id }}/dist/*.exe
+            desktop/build/${{ matrix.app.id }}/dist/*.dmg
           if-no-files-found: error
 
-  release:
-    needs: [setup, build]
+  build-mac:
+    needs: setup
+    if: needs.setup.outputs.mac == 'true'
+    name: Mac · ${{ matrix.app.id }}
+    runs-on: macos-15
+    strategy:
+      fail-fast: false
+      max-parallel: 10
+      matrix:
+        app: ${{ fromJSON(needs.setup.outputs.apps) }}
+    env:
+      ELECTRON_SKIP_BINARY_DOWNLOAD: "1"
+      CSC_IDENTITY_AUTO_DISCOVERY: "false"
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Descargar la app
+        id: src
+        run: |
+          if git clone --depth 1 "https://github.com/sampledhead-dot/${{ matrix.app.repo }}.git" "$RUNNER_TEMP/src"; then
+            echo "ok=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "::warning title=${{ matrix.app.id }}::El repositorio ${{ matrix.app.repo }} no existe o no es accesible; se salta."
+            echo "ok=false" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Instalar herramientas
+        if: steps.src.outputs.ok == 'true'
+        working-directory: desktop
+        run: npm ci --no-audit --no-fund
+      - name: Preparar
+        if: steps.src.outputs.ok == 'true'
+        working-directory: desktop
+        run: node scripts/prepare.js "${{ matrix.app.id }}" "$RUNNER_TEMP/src" "build/${{ matrix.app.id }}"
+      - name: Empaquetar
+        if: steps.src.outputs.ok == 'true'
+        working-directory: desktop
+        run: |
+          # firma ad-hoc (sin certificado de Apple); si falla, sin firma
+          npx electron-builder --projectDir "build/${{ matrix.app.id }}" --mac --publish never \
+            || npx electron-builder --projectDir "build/${{ matrix.app.id }}" --mac --publish never -c.mac.identity=null
+      - uses: actions/upload-artifact@v4
+        if: steps.src.outputs.ok == 'true'
+        with:
+          name: ${{ matrix.app.id }}-mac
+          path: |
+            desktop/build/${{ matrix.app.id }}/dist/*.exe
+            desktop/build/${{ matrix.app.id }}/dist/*.dmg
+          if-no-files-found: error
+
+  release-windows:
+    needs: [setup, build-windows]
     # no publica si la ejecución se cancela; sí aunque falle alguna app suelta
-    if: ${{ !cancelled() && needs.setup.result == 'success' && (github.event_name != 'workflow_dispatch' || github.event.inputs.publicar == 'true') }}
+    if: ${{ !cancelled() && needs.setup.result == 'success' && needs.setup.outputs.windows == 'true' && (github.event_name != 'workflow_dispatch' || github.event.inputs.publicar == 'true') }}
     runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+      TAG: escritorio-v${{ needs.setup.outputs.version }}
     steps:
       - uses: actions/checkout@v4
         with:
           path: repo
       - uses: actions/download-artifact@v4
         with:
+          pattern: "*-windows"
           path: out
           merge-multiple: true
       - name: Publicar en Releases
-        env:
-          GH_TOKEN: ${{ github.token }}
-          TAG: escritorio-v${{ needs.setup.outputs.version }}
-        run: |
-          ls -la out
-          [ -n "$(ls out 2>/dev/null)" ] || { echo "No hay instaladores que publicar"; exit 1; }
-          NOTES="Versiones de escritorio de las apps de Sampled Head (envoltorio v${{ needs.setup.outputs.version }}).
+        run: bash repo/desktop/scripts/release.sh "*.exe"
 
-          - **Windows**: descarga el \`-Windows-Setup.exe\` de la app. Si aparece «Windows protegió su PC», pulsa *Más información → Ejecutar de todas formas* (los instaladores no están firmados).
-          - **Mac** (Intel y Apple Silicon): abre el \`-Mac.dmg\` y arrastra la app a Aplicaciones. La primera vez, clic derecho sobre la app → *Abrir*. Si dice que está dañada: \`xattr -cr \"/Applications/Nombre.app\"\` en Terminal.
-
-          Compilado el $(date -u +%Y-%m-%d) a partir de la última versión de cada app."
-          if gh release view "$TAG" -R "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
-            gh release edit "$TAG" -R "$GITHUB_REPOSITORY" --notes "$NOTES" --latest
-            gh release upload "$TAG" out/* -R "$GITHUB_REPOSITORY" --clobber
-          else
-            gh release create "$TAG" out/* -R "$GITHUB_REPOSITORY" --title "Apps de escritorio v${{ needs.setup.outputs.version }}" --notes "$NOTES" --latest
-          fi
-      - name: Quitar descargas de apps que ya no están en la lista
-        env:
-          GH_TOKEN: ${{ github.token }}
-          TAG: escritorio-v${{ needs.setup.outputs.version }}
-        run: |
-          node -e 'const l = require("./repo/desktop/apps.json"); console.log(l.apps.map(a => a.productName.replace(/[^A-Za-z0-9]+/g, "-") + "-" + l.wrapperVersion + "-").join("\n"))' > keep.txt
-          cat keep.txt
-          gh release view "$TAG" -R "$GITHUB_REPOSITORY" --json assets --jq '.assets[].name' | while read -r n; do
-            keep=0
-            while read -r p; do case "$n" in "$p"*) keep=1 ;; esac; done < keep.txt
-            if [ "$keep" = 0 ]; then echo "Quitando $n"; gh release delete-asset "$TAG" "$n" -R "$GITHUB_REPOSITORY" -y; fi
-          done
+  release-mac:
+    needs: [setup, build-mac]
+    # no publica si la ejecución se cancela; sí aunque falle alguna app suelta
+    if: ${{ !cancelled() && needs.setup.result == 'success' && needs.setup.outputs.mac == 'true' && (github.event_name != 'workflow_dispatch' || github.event.inputs.publicar == 'true') }}
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+      TAG: escritorio-v${{ needs.setup.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: repo
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: "*-mac"
+          path: out
+          merge-multiple: true
+      - name: Publicar en Releases
+        run: bash repo/desktop/scripts/release.sh "*.dmg"
