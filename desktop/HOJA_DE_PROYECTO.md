@@ -1,6 +1,6 @@
-# SampledHead Desktop — Hoja de proyecto
+# SampledHead Apps nativas (Windows · Mac · Android) — Hoja de proyecto
 
-**Versión actual:** 1.0.0 (18-11-2026) · etiqueta de descargas `escritorio-v1.0.0`
+**Versión actual:** 1.1.0 (18-11-2026) · etiqueta de descargas `apps-v1.0.0` (versión de los paquetes 1.0.0)
 **Descargas:** https://github.com/sampledhead-dot/SH-apps/releases/latest
 
 ## Descripción
@@ -20,6 +20,41 @@ usa el micrófono o la interfaz de audio, MIDI y descargas (WAV, ZIP…) igual q
 | `tuner` | SampledHead Tuner | Sampledhead-tuner |
 | `tonopad` | TonoPad | Tono-Pad |
 | `fuzzhead` | FuzzHead | FuzzHead *(se compila en cuanto exista el repositorio)* |
+
+## Qué versión tiene cada app (decisión del 18-11-2026)
+| App | Web | Windows / Mac / Android | Plugin VST3/AU |
+|---|---|---|---|
+| SH-apps (portal) | ✔ | — (siempre solo web, hasta nuevo aviso) | — |
+| SampledHead App | ✔ | ✔ | — |
+| CrazyHead | ✔ | ✔ | — |
+| Pop!Pads | ✔ | ✔ | — |
+| SampledHead Editor | ✔ | ✔ | — |
+| TonoPad | ✔ | ✔ | — |
+| SampledHead Tuner | ✔ | ✔ | ✔ (repo Sampledhead-tuner, `vst/`) |
+| FuzzHead | ✔ | ✔ | ✔ (repo FuzzHead, `vst/`; el zip del plugin trae además su Standalone en tiempo real) |
+| Sample Pack Builder | ✔ | ✔ | — |
+| Chuleta Beat | ✔ | ✔ | — |
+
+## Android
+- `android/template/` — proyecto Gradle (Java, sin Kotlin) con un WebView que sirve la web desde el APK en
+  `https://appassets.androidplatform.net/assets/web/` (origen seguro). Android 10+ (minSdk 29), targetSdk 35.
+- `MainActivity.java`: permiso de micrófono (getUserMedia), selector de archivos del teléfono (`<input type=file>`),
+  **descargas** (las apps descargan con `<a download>` + `blob:`; un script inyectado al inicio de cada página
+  intercepta esos clics y envía el archivo en trozos a Android, que lo guarda en *Descargas/<App>/*), enlaces externos
+  al navegador, botón Atrás, service workers desactivados (los archivos ya están en el APK) e **informe de error**
+  (.txt en Descargas/<App>/) si se cae la página o la app.
+- `android/scripts/prepare.js` — copia la web, iconos (`android/icons/<id>/mipmap-*`) y datos de la app.
+- Firma: secretos `SH_ANDROID_KEYSTORE` (keystore en base64) y `SH_ANDROID_PASSWORD`; sin ellos, clave provisional
+  `android/keystore/provisional.jks` (contraseña pública `sampledhead-provisional`). **Importante**: Android solo actualiza
+  una app si la nueva está firmada con la misma clave; cambiar de la provisional a la permanente obliga a desinstalar una vez.
+- `versionCode` = 1.000.000 + número de ejecución (siempre sube, para que se pueda actualizar encima).
+
+## Mac sin máquinas Mac
+GitHub no asigna máquinas Mac a esta cuenta (los trabajos se cancelan tras 15-30 min y llegan correos de error).
+Por eso las apps de escritorio para Mac se generan **en Linux** (`desktop/scripts/mac-zip.sh`): electron-builder crea
+la app para Apple Silicon y para Intel por separado (la «universal» y el DMG solo se pueden hacer en un Mac) y
+`rcodesign` les pone firma ad-hoc. Los **plugins** (JUCE) sí necesitan un Mac para compilarse: sus trabajos de Mac
+quedan como opcionales (Run workflow → mac) para no generar correos de error.
 
 ## Arquitectura
 - **Electron** (Chromium, el mismo motor con el que se prueban las webs) + **electron-builder**.
@@ -43,9 +78,9 @@ usa el micrófono o la interfaz de audio, MIDI y descargas (WAV, ZIP…) igual q
   el `package.json` de electron-builder (Windows: instalador NSIS x64; Mac: DMG universal Intel + Apple Silicon).
 - `scripts/selftest.js` — lanza la autoprueba de una app preparada o empaquetada.
 - `icons/<id>.png` — icono 1024 px de cada app (sacado de su manifest/logo en el momento de crear esta versión).
-- `../.github/workflows/desktop.yml` — compila en GitHub Actions las 9 apps para Windows y para Mac **por separado**
-  (cada sistema publica en cuanto termina) y las sube a Releases con `scripts/release.sh`, que además retira
-  las descargas de apps que ya no estén en la lista. Se lanza al cambiar `desktop/`, cada lunes (recoge las novedades de cada app) o a mano
+- `../.github/workflows/desktop.yml` (workflow «apps») — compila las 9 apps para Windows, Mac (en Linux) y Android
+  **por separado** (cada sistema publica en cuanto termina) y lo sube todo a la release `apps-vX.Y.Z` con
+  `scripts/release.sh`, que además retira las descargas de apps que ya no estén en la lista. Se lanza al cambiar `desktop/`, cada lunes (recoge las novedades de cada app) o a mano
   (Actions → desktop → Run workflow; se puede indicar qué apps).
 
 ## Reglas permanentes
@@ -58,6 +93,8 @@ usa el micrófono o la interfaz de audio, MIDI y descargas (WAV, ZIP…) igual q
 - Informe de error .txt automático y opción manual en el menú Ayuda.
 
 ## Historial de versiones
+- **1.1.0** (18-11-2026): versiones **Android (APK)**; **Mac generado en Linux** (zip Apple Silicon + Intel con firma ad-hoc);
+  una sola release `apps-vX.Y.Z` para las tres plataformas (se borra la antigua `escritorio-v1.0.0`).
 - **1.0.0** (18-11-2026): primera versión. 9 apps (el portal SH-apps queda fuera por decisión: solo web), Windows (instalador) y Mac (DMG universal), publicación en Releases,
   enlace en el portal (portal v9).
 
@@ -71,9 +108,10 @@ usa el micrófono o la interfaz de audio, MIDI y descargas (WAV, ZIP…) igual q
   Sample Pack Builder, MP3 del Editor) **siguen necesitando conexión** en escritorio.
 - MIDI: el permiso se concede; no se ha podido probar con un dispositivo MIDI real.
 - Cada app ocupa unos 100 MB (Windows) / 250 MB (Mac universal) porque incluye su propio Chromium.
-- **Mac**: las máquinas Mac de GitHub (`macos-latest` y `macos-15`) no se han asignado a esta cuenta el 18-11-2026
-  (los trabajos se quedan en cola). Los DMG se publicarán solos en cuanto GitHub asigne Macs; si no ocurre, revisar
-  Settings → Actions de la cuenta o compilar en un Mac propio (`desktop/README.md`).
+- **Mac**: generado en Linux, sin DMG ni app universal; firma ad-hoc (no de Apple): hay que abrir con clic derecho → Abrir
+  o `xattr -cr`. No se ha podido abrir en un Mac real.
+- **Android**: probado el empaquetado, la firma y el código de descargas (en Chrome con el puente simulado); no se ha
+  podido arrancar en un emulador (este entorno no tiene KVM) ni en un móvil real. Web MIDI no existe en Android WebView.
 - Sin actualizaciones automáticas dentro del programa: las versiones nuevas se descargan de Releases.
 - Iconos: copiados en `icons/`; si una app cambia de icono hay que regenerar el suyo.
 - No es un plugin VST: las versiones VST/AU están pendientes (siguiente paso: Tuner).

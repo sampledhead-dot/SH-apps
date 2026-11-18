@@ -1,0 +1,45 @@
+plugins { id 'com.android.application' }
+
+// Valores que rellena scripts/prepare.js en app.properties
+def props = new Properties()
+file('app.properties').withInputStream { props.load(it) }
+
+android {
+    namespace 'com.sampledhead.shell'
+    compileSdk 35
+    defaultConfig {
+        applicationId props.applicationId
+        minSdk 29
+        targetSdk 35
+        versionCode Integer.parseInt(props.versionCode)
+        versionName props.versionName
+        resValue 'string', 'app_name', props.appName
+        resValue 'string', 'web_url', props.webUrl
+        resValue 'string', 'app_id', props.appId
+        resValue 'color', 'app_bg', props.color
+    }
+    signingConfigs {
+        release {
+            storeFile file(System.getenv('SH_KEYSTORE') ?: '../keystore.jks')
+            storePassword System.getenv('SH_KEYSTORE_PASSWORD') ?: ''
+            keyAlias System.getenv('SH_KEY_ALIAS') ?: 'sampledhead'
+            keyPassword System.getenv('SH_KEYSTORE_PASSWORD') ?: ''
+        }
+    }
+    buildTypes {
+        release {
+            minifyEnabled false
+            signingConfig signingConfigs.release
+        }
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+    androidResources { noCompress += ['wasm', 'onnx', 'wav', 'mp3', 'zip'] }
+    lint { abortOnError false; checkReleaseBuilds false }
+}
+
+dependencies {
+    implementation 'androidx.webkit:webkit:1.12.1'
+}
