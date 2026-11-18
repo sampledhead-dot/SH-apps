@@ -36,6 +36,7 @@ Si se cambia el logo, hay que volver a recortar las tres capas y revisar las med
 - v5 — descripción de CrazyHead corregida (sampler con generador de secuencias aleatorias, cuatro pistas y efectos).
 - v6 — nueva app: TonoPad (`Tono-Pad/`, icono SVG en su manifest).
 - v7 — el portal ya se puede instalar en el móvil (PWA): `manifest.webmanifest`, `sw.js`, iconos 192/512/maskable/apple-touch, botón "Instalar" y aviso para iPhone.
+- v8 — nueva app: FuzzHead (`FuzzHead/`, sintetizador para guitarra y bajo; icono PNG en su manifest, copia en `icons/fuzzhead.png`).
 
 ## Reglas permanentes
 - Entrega en `nombre-vN.zip` con carpeta `nombre-vN`, versión visible en el pie.
