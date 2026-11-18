@@ -1,7 +1,7 @@
 // Prepara el proyecto Android de una app:  node android/scripts/prepare.js <id> <carpeta-del-repo> <salida> [versionCode]
 // Usa la misma lista de apps que el escritorio (desktop/apps.json).
 'use strict';
-const fs = require('fs'), path = require('path');
+const fs = require('fs'), path = require('path'), cp = require('child_process');
 const [id, src, outArg, codeArg] = process.argv.slice(2);
 if (!id || !src || !outArg) { console.error('Uso: node scripts/prepare.js <id> <repo> <salida> [versionCode]'); process.exit(2); }
 const ROOT = path.join(__dirname, '..');
@@ -34,6 +34,9 @@ fs.writeFileSync(path.join(out, 'app', 'app.properties'), [
   'versionName=' + ver,
   'versionCode=' + versionCode,
   'webUrl=https://sampledhead-dot.github.io/' + A.repo + '/',
+  'repo=' + A.repo,
+  'exclude=' + (A.exclude || []).join(','),
+  'contentSha=' + (() => { try { return cp.execSync('git -C "' + src + '" rev-parse HEAD', { stdio: ['ignore', 'pipe', 'ignore'] }).toString().trim(); } catch (e) { return ''; } })(),
   'color=' + (A.color || '#111111')
 ].join('\n') + '\n', 'utf8');
 console.log(JSON.stringify({ id, out, versionName: ver, versionCode, files: fs.readdirSync(webOut).length }));

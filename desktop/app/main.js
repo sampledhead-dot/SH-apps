@@ -4,13 +4,15 @@
  * (shapp://app/) para que micrófono, MIDI, localStorage, workers y WASM funcionen igual que en GitHub Pages.
  */
 'use strict';
-const { app, BrowserWindow, protocol, shell, session, dialog, Menu, systemPreferences, screen } = require('electron');
+const { app, BrowserWindow, protocol, shell, session, dialog, Menu, systemPreferences, screen, net } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const os = require('os');
 
-const CFG = require('./config.json');            // { id, name, productName, wrapperVersion, buildId, webUrl, color }
+const CFG = require('./config.json');            // { id, name, productName, wrapperVersion, buildId, webUrl, color, repo, exclude, contentSha }
 const WEB = path.join(__dirname, 'web');
+const { createUpdater, newer } = require('./updater');
+let UPD = null;   // actualización del contenido (se crea al arrancar)
 const SCHEME = 'shapp';
 const START_URL = SCHEME + '://app/index.html';
 const SELFTEST = process.env.SH_SELFTEST || '';
@@ -47,6 +49,7 @@ function buildReport(where, err) {
     'WebGPU: depende del equipo (ver el informe propio de la app)',
     'Memoria JS (proceso principal): ' + Math.round(mem.heapUsed / 1048576) + ' MB',
     'Opciones: ' + JSON.stringify(CFG),
+    'Contenido: ' + (UPD ? JSON.stringify(Object.assign({ usando: UPD.sha().slice(0, 7), descargada: UPD.usingDownloaded() }, UPD.state())) : '(sin iniciar)'),
     'Archivo: (los archivos de audio se gestionan dentro de la app; aquí no se registran)',
     'Resultado parcial: ' + (lastPartial || '(ninguno)'),
     '',
@@ -102,8 +105,9 @@ function serve(request) {
     const u = new URL(request.url);
     let rel = decodeURIComponent(u.pathname);
     if (rel.endsWith('/')) rel += 'index.html';
-    const file = path.normalize(path.join(WEB, rel));
-    if (!file.startsWith(WEB + path.sep) && file !== WEB) return new Response('Prohibido', { status: 403 });
+    const ROOTDIR = UPD ? UPD.dir() : WEB;
+    const file = path.normalize(path.join(ROOTDIR, rel));
+    if (!file.startsWith(ROOTDIR + path.sep) && file !== ROOTDIR) return new Response('Prohibido', { status: 403 });
     if (!fs.existsSync(file) || !fs.statSync(file).isFile()) { log('aviso', '404 ' + rel); return new Response('No encontrado', { status: 404 }); }
     const body = fs.readFileSync(file);
     return new Response(body, { status: 200, headers: {
@@ -121,7 +125,7 @@ app.setName(CFG.productName);
 if (SELFTEST) {
   app.commandLine.appendSwitch('use-fake-device-for-media-stream');
   app.commandLine.appendSwitch('use-fake-ui-for-media-stream');
-  app.setPath('userData', path.join(os.tmpdir(), 'sh-selftest-' + CFG.id + '-' + process.pid));
+  app.setPath('userData', process.env.SH_USERDATA || path.join(os.tmpdir(), 'sh-selftest-' + CFG.id + '-' + process.pid));
 }
 
 function isInternal(url) { return url.startsWith(SCHEME + '://app/'); }
@@ -131,10 +135,11 @@ async function clearOldServiceWorkers(ses) {
   const marker = path.join(app.getPath('userData'), 'build-id.txt');
   let prev = '';
   try { prev = fs.readFileSync(marker, 'utf8'); } catch (e) {}
-  if (prev !== CFG.buildId) {
+  const now = CFG.buildId + '|' + (UPD ? UPD.sha() : '');
+  if (prev !== now) {
     await ses.clearStorageData({ storages: ['serviceworkers', 'cachestorage'] });
-    try { fs.writeFileSync(marker, CFG.buildId); } catch (e) {}
-    step('Caché de service worker renovada (' + (prev || 'primera vez') + ' → ' + CFG.buildId + ')');
+    try { fs.writeFileSync(marker, now); } catch (e) {}
+    step('Caché de service worker renovada (' + (prev || 'primera vez') + ' → ' + now + ')');
   }
 }
 
@@ -158,12 +163,16 @@ function buildMenu() {
       { role: 'toggleDevTools', label: 'Herramientas de desarrollo' }
     ] },
     { label: 'Ayuda', submenu: [
+      { label: 'Buscar actualizaciones', click: () => checkUpdates(true) },
+      { label: 'Volver a la versión incluida en el programa', click: () => resetContent() },
+      { type: 'separator' },
       { label: 'Guardar informe (.txt)', click: () => saveReport('informe manual (menú Ayuda)', null, true) },
       { label: 'Abrir la versión web', click: () => shell.openExternal(CFG.webUrl) },
       { label: 'Todas las apps de Sampled Head', click: () => shell.openExternal('https://sampledhead-dot.github.io/SH-apps/') },
       { type: 'separator' },
       { label: 'Acerca de ' + CFG.name, click: () => dialog.showMessageBox({ type: 'info', title: CFG.name,
         message: CFG.name, detail: 'Versión de escritorio v' + CFG.wrapperVersion + ' (build ' + CFG.buildId + ')\n' +
+          'Contenido: ' + (UPD && UPD.sha() ? UPD.sha().slice(0, 7) : '?') + (UPD && UPD.usingDownloaded() ? ' (actualizado desde GitHub)' : ' (incluido en el programa)') + '\n' +
           'Electron ' + process.versions.electron + ' · Chromium ' + process.versions.chrome + '\n\nSampled Head' }) }
     ] }
   ];
@@ -226,9 +235,90 @@ async function createWindow() {
   wc.on('did-finish-load', () => { step('Página cargada: ' + wc.getTitle()); lastPartial = 'página cargada'; });
 
   buildMenu();
-  step('Cargando ' + START_URL);
+  step('Cargando ' + START_URL + ' (contenido ' + (UPD.sha() ? UPD.sha().slice(0, 7) : '?') + (UPD.usingDownloaded() ? ', descargado' : ', incluido') + ')');
+  watchStart(wc);
   await win.loadURL(START_URL);
   if (SELFTEST) runSelfTest(wc);
+  if (!SELFTEST || process.env.SH_UPDATE_API) {
+    setTimeout(() => checkUpdates(false), SELFTEST ? 1500 : 8000);
+    setInterval(() => checkUpdates(false), 6 * 3600 * 1000);
+  }
+}
+
+/* ---------------- Actualizaciones ---------------- */
+/* Si una versión descargada no arranca (no carga, se cae o la página sale vacía), se vuelve a la anterior. */
+function watchStart(wc) {
+  if (!UPD.usingDownloaded()) return;
+  let done = false;
+  const fail = reason => {
+    if (done) return; done = true;
+    if (UPD.rollback(reason)) {
+      onFail('arranque de la versión actualizada', new Error(reason + ' — se ha vuelto a la versión anterior'));
+      session.defaultSession.clearStorageData({ storages: ['serviceworkers', 'cachestorage'] }).catch(() => {}).then(() => { if (win && !win.isDestroyed()) win.loadURL(START_URL); });
+    }
+  };
+  wc.once('did-fail-load', (e, code, desc, url, isMain) => { if (isMain && code !== -3) fail('no carga: ' + desc); });
+  wc.once('render-process-gone', (e, d) => fail('la página se cerró: ' + d.reason));
+  wc.once('did-finish-load', () => setTimeout(() => {
+    if (done || !win || win.isDestroyed()) return;
+    wc.executeJavaScript('document.body ? document.body.querySelectorAll("*").length : 0').then(n => { if (n < 4) fail('la página sale vacía'); else done = true; }).catch(() => {});
+  }, 3500));
+  setTimeout(() => { if (!done && wc.isLoading()) fail('no termina de cargar'); }, 30000);
+}
+async function reloadContent() {
+  await session.defaultSession.clearStorageData({ storages: ['serviceworkers', 'cachestorage'] }).catch(() => {});
+  try { fs.writeFileSync(path.join(app.getPath('userData'), 'build-id.txt'), CFG.buildId + '|' + UPD.sha()); } catch (e) {}
+  if (win && !win.isDestroyed()) { watchStart(win.webContents); win.loadURL(START_URL); }
+}
+let asking = false;
+async function checkUpdates(manual) {
+  if (!UPD || asking) return;
+  const r = await UPD.check();
+  step('Búsqueda de actualizaciones: ' + r.estado + (r.sha ? ' ' + r.sha.slice(0, 7) : '') + (r.mensaje ? ' · ' + String(r.mensaje).split('\n')[0] : ''));
+  if (SELFTEST) { try { fs.writeFileSync(SELFTEST + '.update.json', JSON.stringify({ r, state: UPD.state(), dir: UPD.dir() }, null, 1)); } catch (e) {} }
+  if (r.estado === 'lista') {
+    if (SELFTEST) { UPD.applyNow(); await reloadContent(); return; }
+    asking = true;
+    const res = await dialog.showMessageBox(win, { type: 'info', title: CFG.name, buttons: ['Recargar ahora', 'Al volver a abrir'], defaultId: 0, cancelId: 1,
+      message: 'Hay una versión nueva de ' + CFG.name,
+      detail: 'Ya está descargada (' + r.cambiados + ' archivo' + (r.cambiados === 1 ? '' : 's') + ' nuevo' + (r.cambiados === 1 ? '' : 's') + ').\n\n' +
+        'Si recargas ahora, guarda o exporta antes lo que estés haciendo. Si no, se usará la próxima vez que abras la app.' }).catch(() => ({ response: 1 }));
+    asking = false;
+    if (res.response === 0 && UPD.applyNow()) { step('Versión nueva activada: ' + UPD.sha().slice(0, 7)); reloadContent(); }
+  } else if (manual) {
+    dialog.showMessageBox(win, { type: r.estado === 'error' ? 'warning' : 'info', title: CFG.name,
+      message: r.estado === 'error' ? 'No se ha podido comprobar' : (UPD.pending() ? 'Hay una versión nueva descargada' : 'Tienes la última versión'),
+      detail: r.estado === 'error' ? r.mensaje + '\n\n¿Hay conexión a internet? La app sigue funcionando con la versión que tienes.' :
+        (UPD.pending() ? 'Se usará la próxima vez que abras la app.' : 'Contenido ' + (UPD.sha() ? UPD.sha().slice(0, 7) : '?') + '.') }).catch(() => {});
+  }
+  checkProgram(manual);
+}
+/* ¿Hay un instalador nuevo del propio programa? (solo hace falta cuando cambia el envoltorio, no la web) */
+async function checkProgram(manual) {
+  try {
+    const r = await net.fetch('https://api.github.com/repos/sampledhead-dot/SH-apps/releases/latest', { headers: { Accept: 'application/vnd.github+json' } });
+    if (!r.ok) return;
+    const rel = await r.json(), v = String(rel.tag_name || '').replace(/^apps-v/, '');
+    if (!newer(CFG.wrapperVersion, v)) return;
+    const seen = path.join(app.getPath('userData'), 'aviso-programa.txt');
+    let last = ''; try { last = fs.readFileSync(seen, 'utf8'); } catch (e) {}
+    if (last === v && !manual) return;
+    const prefix = CFG.productName.replace(/[^A-Za-z0-9]+/g, '-') + '-' + v + '-';
+    const want = process.platform === 'win32' ? 'Windows-Setup.exe' : process.platform === 'darwin' ? (process.arch === 'arm64' ? 'Mac-AppleSilicon.zip' : 'Mac-Intel.zip') : '';
+    const asset = want && (rel.assets || []).find(a => a.name === prefix + want);
+    const res = await dialog.showMessageBox(win, { type: 'info', title: CFG.name, buttons: ['Descargar', 'Ahora no'], defaultId: 0, cancelId: 1,
+      message: 'Hay una versión nueva del programa (v' + v + ')',
+      detail: 'Tienes la v' + CFG.wrapperVersion + '. La app se actualiza sola, pero esta mejora es del propio programa y hay que instalarla una vez.' +
+        (process.platform === 'darwin' ? '\n\nEn Mac: descomprime el .zip y sustituye la app en Aplicaciones.' : '') });
+    try { fs.writeFileSync(seen, v); } catch (e) {}
+    if (res.response === 0) shell.openExternal(asset ? asset.browser_download_url : rel.html_url);
+  } catch (e) { log('aviso', 'comprobación del programa: ' + e.message); }
+}
+async function resetContent() {
+  const r = await dialog.showMessageBox(win, { type: 'question', title: CFG.name, buttons: ['Volver a la incluida', 'Cancelar'], defaultId: 1, cancelId: 1,
+    message: '¿Usar la versión incluida en el programa?', detail: 'Se dejan de usar las actualizaciones descargadas hasta que haya otra nueva. Tus proyectos y ajustes no se borran.' });
+  if (r.response !== 0) return;
+  UPD.reset(); step('Vuelta a la versión incluida'); reloadContent();
 }
 
 /* ---------------- Autoprueba (solo para desarrollo/CI: SH_SELFTEST=archivo.json) ---------------- */
@@ -268,6 +358,8 @@ async function runSelfTest(wc) {
 
 app.whenReady().then(() => {
   step('Arrancando ' + CFG.name + ' v' + CFG.wrapperVersion);
+  UPD = createUpdater({ repo: CFG.repo, exclude: CFG.exclude || [], bundledDir: WEB, bundledSha: CFG.contentSha || '',
+    dataDir: app.getPath('userData'), fetch: (u, opt) => net.fetch(u, opt), log });
   protocol.handle(SCHEME, serve);
   return createWindow();
 }).catch(e => onFail('arranque', e));

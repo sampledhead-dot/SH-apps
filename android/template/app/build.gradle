@@ -16,6 +16,9 @@ android {
         resValue 'string', 'app_name', props.appName
         resValue 'string', 'web_url', props.webUrl
         resValue 'string', 'app_id', props.appId
+        resValue 'string', 'repo', props.repo
+        resValue 'string', 'exclude', props.exclude ?: ''
+        resValue 'string', 'content_sha', props.contentSha ?: ''
         resValue 'color', 'app_bg', props.color
     }
     signingConfigs {

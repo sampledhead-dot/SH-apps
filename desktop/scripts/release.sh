@@ -19,6 +19,8 @@ NOTES="Apps de Sampled Head v$VER para **Windows, Mac y Android** (el portal SH-
 
 **Android** (Android 10 o superior): descarga el \`-Android.apk\` en el móvil y ábrelo. Android pedirá permiso para *instalar apps de origen desconocido* (navegador o Archivos). Las exportaciones (WAV, ZIP…) se guardan en *Descargas/Nombre de la app*.
 
+**Actualizaciones**: desde la v1.1.0 las apps se actualizan solas. Al abrirlas comprueban si hay cambios en la web de la app, descargan solo lo nuevo y lo aplican al pulsar «Recargar ahora» o la próxima vez que se abran. Tus proyectos y ajustes se conservan. Si alguna vez cambia el propio programa, la app avisa con un botón para descargarlo.
+
 Los instaladores no están firmados con certificados de pago (Apple / Microsoft / Google Play), por eso aparecen esos avisos. Se recompilan cada lunes con la última versión de cada app."
 
 # La release antigua con otro nombre ya no se usa
@@ -32,6 +34,11 @@ if ! gh release view "$TAG" -R "$REPO" >/dev/null 2>&1; then
 fi
 gh release edit "$TAG" -R "$REPO" --notes "$NOTES" --latest
 for i in 1 2 3; do gh release upload "$TAG" "${FILES[@]}" -R "$REPO" --clobber && break || sleep 15; done
+
+# Las releases de versiones anteriores del programa (apps-v*) se retiran: solo queda la última para descargar
+for old in $(gh release list -R "$REPO" --limit 50 --json tagName --jq '.[].tagName' | grep '^apps-v' | grep -vx "$TAG" || true); do
+  echo "Retirando la release anterior $old"; gh release delete "$old" -R "$REPO" --cleanup-tag -y || true
+done
 
 # Retirar descargas de apps que ya no están en la lista
 node -e 'const l = require("./repo/desktop/apps.json"); console.log(l.apps.map(a => a.productName.replace(/[^A-Za-z0-9]+/g, "-") + "-").join("\n"))' > keep.txt

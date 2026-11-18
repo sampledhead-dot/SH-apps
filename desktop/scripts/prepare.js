@@ -24,14 +24,17 @@ function copy(from, to) {
 }
 copy(src, path.join(out, 'web'));
 
-let commit = 'local';
-try { commit = cp.execSync('git -C "' + src + '" rev-parse --short HEAD', { stdio: ['ignore', 'pipe', 'ignore'] }).toString().trim(); } catch (e) {}
+let full = '';
+try { full = cp.execSync('git -C "' + src + '" rev-parse HEAD', { stdio: ['ignore', 'pipe', 'ignore'] }).toString().trim(); } catch (e) {}
+const commit = full ? full.slice(0, 7) : 'local';
 const buildId = LIST.wrapperVersion + '+' + commit;
 const webUrl = 'https://sampledhead-dot.github.io/' + A.repo + '/';
 fs.copyFileSync(path.join(ROOT, 'app', 'main.js'), path.join(out, 'main.js'));
+fs.copyFileSync(path.join(ROOT, 'app', 'updater.js'), path.join(out, 'updater.js'));
 fs.copyFileSync(path.join(ROOT, 'icons', id + '.png'), path.join(out, 'icon.png'));
 fs.writeFileSync(path.join(out, 'config.json'), JSON.stringify({
-  id, name: A.name, productName: A.productName, wrapperVersion: LIST.wrapperVersion, buildId, webUrl, color: A.color
+  id, name: A.name, productName: A.productName, wrapperVersion: LIST.wrapperVersion, buildId, webUrl, color: A.color,
+  repo: A.repo, exclude: A.exclude || [], contentSha: full
 }, null, 2));
 
 const art = A.productName.replace(/[^A-Za-z0-9]+/g, '-') + '-' + LIST.wrapperVersion;
@@ -41,7 +44,7 @@ fs.writeFileSync(path.join(out, 'package.json'), JSON.stringify({
   build: {
     appId: 'com.sampledhead.' + id, publish: null, productName: A.productName, electronVersion: LIST.electronVersion,
     directories: { output: 'dist', buildResources: '.' },
-    files: ['main.js', 'config.json', 'icon.png', 'web/**/*'],
+    files: ['main.js', 'updater.js', 'config.json', 'icon.png', 'web/**/*'],
     asar: true,
     mac: {
       target: [{ target: 'dmg', arch: ['universal'] }], category: 'public.app-category.music', icon: 'icon.png',

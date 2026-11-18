@@ -40,7 +40,10 @@ import androidx.webkit.WebViewAssetLoader;
 import androidx.webkit.WebViewCompat;
 import androidx.webkit.WebViewFeature;
 
+import java.io.File;
+import java.io.FileInputStream;
 import java.io.OutputStream;
+import java.util.Arrays;
 import java.text.SimpleDateFormat;
 import java.util.ArrayDeque;
 import java.util.Collections;
@@ -64,6 +67,9 @@ public class MainActivity extends Activity {
     final Map<Integer, Download> downloads = new HashMap<>();
     int nextDownload = 1;
     final Handler ui = new Handler(Looper.getMainLooper());
+    Updater upd;                 // actualización del contenido (la web) desde GitHub
+    boolean startOk = false;      // la versión en uso ya ha arrancado bien
+    boolean checking = false;
 
     static class Download { Uri uri; OutputStream out; String name; long bytes; }
 
@@ -93,6 +99,7 @@ public class MainActivity extends Activity {
         b.append("Pantalla: ").append(getResources().getDisplayMetrics().widthPixels).append("x").append(getResources().getDisplayMetrics().heightPixels).append(" @").append(getResources().getDisplayMetrics().density).append("x\n");
         b.append("URL: ").append(web != null ? web.getUrl() : START).append(" · contexto seguro: sí (https) · COOP/COEP: no\n");
         b.append("Opciones: id=").append(getString(R.string.app_id)).append(" web=").append(getString(R.string.web_url)).append("\n");
+        b.append("Contenido: ").append(upd != null ? upd.describe() : "(sin iniciar)").append("\n");
         b.append("Archivo: (el audio se gestiona dentro de la app; aquí no se registra)\n");
         b.append("\n--- Cronología ---\n"); synchronized (this) { for (String s : steps) b.append(s).append("\n"); }
         b.append("\n--- Consola (últimas ").append(log.size()).append(" líneas) ---\n"); synchronized (this) { for (String s : log) b.append(s).append("\n"); }
@@ -197,11 +204,17 @@ public class MainActivity extends Activity {
         if (WebViewFeature.isFeatureSupported(WebViewFeature.DOCUMENT_START_SCRIPT))
             WebViewCompat.addDocumentStartJavaScript(web, INJECT, Collections.singleton("https://" + HOST));
 
+        upd = new Updater(getString(R.string.repo), Arrays.asList(getString(R.string.exclude).isEmpty() ? new String[0] : getString(R.string.exclude).split(",")),
+                rel -> getAssets().open("web/" + rel), getString(R.string.content_sha), getFilesDir(), this::log);
+        step("Contenido " + Updater.short7(upd.sha()) + (upd.usingDownloaded() ? " (descargado)" : " (incluido en el APK)"));
+
         final WebViewAssetLoader loader = new WebViewAssetLoader.Builder()
                 .setDomain(HOST).addPathHandler("/assets/", new WebViewAssetLoader.AssetsPathHandler(this)).build();
 
         web.setWebViewClient(new androidx.webkit.WebViewClientCompat() {
             @Override public WebResourceResponse shouldInterceptRequest(WebView v, WebResourceRequest r) {
+                WebResourceResponse own = fromDownloaded(r.getUrl());
+                if (own != null) return own;
                 WebResourceResponse res = loader.shouldInterceptRequest(r.getUrl());
                 if (res != null && r.getUrl().getPath() != null && r.getUrl().getPath().endsWith(".webmanifest")) res.setMimeType("application/manifest+json");
                 return res;
@@ -215,8 +228,16 @@ public class MainActivity extends Activity {
             @Override public void onPageFinished(WebView v, String url) {
                 if (!WebViewFeature.isFeatureSupported(WebViewFeature.DOCUMENT_START_SCRIPT)) v.evaluateJavascript(INJECT, null);
                 step("Página cargada: " + v.getTitle());
+                if (!startOk && upd.usingDownloaded()) ui.postDelayed(() -> { if (web == null || startOk) return;
+                    web.evaluateJavascript("document.body?document.body.querySelectorAll('*').length:0", n -> { int k = 0; try { k = Integer.parseInt(n.replaceAll("[^0-9]", "")); } catch (Exception ignored) {}
+                        if (k < 4) rollbackAndReload("la página sale vacía"); else startOk = true; }); }, 3500);
+                else startOk = true;
+            }
+            @Override public void onReceivedError(WebView v, WebResourceRequest r, androidx.webkit.WebResourceErrorCompat e) {
+                if (r.isForMainFrame() && !startOk && upd.usingDownloaded()) rollbackAndReload("no carga" + (WebViewFeature.isFeatureSupported(WebViewFeature.WEB_RESOURCE_ERROR_GET_DESCRIPTION) ? ": " + e.getDescription() : ""));
             }
             @Override public boolean onRenderProcessGone(WebView v, RenderProcessGoneDetail d) {
+                if (!startOk && upd.usingDownloaded()) upd.rollback("la página se cerró al arrancar");
                 saveReport("proceso de la página", null, "El proceso de la página se cerró (" + (d.didCrash() ? "fallo" : "falta de memoria") + ")", true);
                 recreate();
                 return true;
@@ -260,6 +281,74 @@ public class MainActivity extends Activity {
 
         if (state != null) web.restoreState(state); else web.loadUrl(START);
         step("Cargando " + START);
+        ui.postDelayed(() -> checkUpdates(false), 8000);
+    }
+
+    // ---------------------------------------------------------------- actualizaciones
+    static final Map<String, String> MIME = new HashMap<>();
+    static {
+        String[][] m = {{"html", "text/html"}, {"htm", "text/html"}, {"js", "text/javascript"}, {"mjs", "text/javascript"}, {"css", "text/css"}, {"json", "application/json"},
+            {"webmanifest", "application/manifest+json"}, {"svg", "image/svg+xml"}, {"png", "image/png"}, {"jpg", "image/jpeg"}, {"jpeg", "image/jpeg"}, {"gif", "image/gif"},
+            {"webp", "image/webp"}, {"ico", "image/x-icon"}, {"wasm", "application/wasm"}, {"wav", "audio/wav"}, {"mp3", "audio/mpeg"}, {"ogg", "audio/ogg"}, {"m4a", "audio/mp4"},
+            {"txt", "text/plain"}, {"md", "text/markdown"}, {"woff", "font/woff"}, {"woff2", "font/woff2"}, {"ttf", "font/ttf"}, {"zip", "application/zip"}, {"pdf", "application/pdf"}};
+        for (String[] x : m) MIME.put(x[0], x[1]);
+    }
+    /** Si hay una versión descargada, la web se sirve desde ella (misma dirección, así que los datos guardados se conservan). */
+    WebResourceResponse fromDownloaded(Uri u) {
+        File d = upd == null ? null : upd.dir();
+        String p = u.getPath();
+        if (d == null || p == null || !HOST.equals(u.getHost()) || !p.startsWith("/assets/web/")) return null;
+        String rel = p.substring("/assets/web/".length()); if (rel.isEmpty() || rel.endsWith("/")) rel += "index.html";
+        try {
+            File f = new File(d, rel);
+            if (!f.getCanonicalPath().startsWith(d.getCanonicalPath() + File.separator) || !f.isFile()) return null;
+            String ext = rel.contains(".") ? rel.substring(rel.lastIndexOf('.') + 1).toLowerCase(Locale.ROOT) : "";
+            String mime = MIME.containsKey(ext) ? MIME.get(ext) : "application/octet-stream";
+            WebResourceResponse res = new WebResourceResponse(mime, mime.startsWith("text/") || mime.contains("json") || mime.contains("svg") ? "utf-8" : null, new FileInputStream(f));
+            Map<String, String> h = new HashMap<>(); h.put("Cache-Control", "no-cache"); h.put("Access-Control-Allow-Origin", "*"); res.setResponseHeaders(h);
+            return res;
+        } catch (Exception e) { log("aviso", "servir " + rel + ": " + e); return null; }
+    }
+    void rollbackAndReload(String reason) {
+        if (upd.rollback(reason)) {
+            saveReport("arranque de la versión actualizada", null, reason + " — se ha vuelto a la versión anterior", false);
+            startOk = false; if (web != null) web.loadUrl(START);
+        }
+    }
+    void checkUpdates(boolean manual) {
+        if (checking || upd == null) return; checking = true;
+        new Thread(() -> {
+            Updater.Result r = upd.check();
+            step("Búsqueda de actualizaciones: " + r);
+            ui.post(() -> {
+                checking = false;
+                if (isFinishing() || web == null) return;
+                if ("lista".equals(r.estado)) new AlertDialog.Builder(this).setTitle("Hay una versión nueva")
+                        .setMessage("Ya está descargada (" + r.cambiados + " archivo" + (r.cambiados == 1 ? "" : "s") + " nuevo" + (r.cambiados == 1 ? "" : "s") + ").\n\nSi recargas ahora, guarda o exporta antes lo que estés haciendo. Si no, se usará la próxima vez que abras la app.")
+                        .setPositiveButton("Recargar ahora", (dl, w) -> { if (upd.applyNow()) { step("Versión nueva activada: " + Updater.short7(upd.sha())); startOk = false; web.loadUrl(START); } })
+                        .setNegativeButton("Al volver a abrir", null).show();
+            });
+            checkProgram();
+        }).start();
+    }
+    /** ¿Hay un APK nuevo del propio programa? (solo hace falta cuando cambia el envoltorio, no la web) */
+    void checkProgram() {
+        try {
+            @SuppressWarnings("unchecked") Map<String, Object> rel = (Map<String, Object>) Updater.Json.parse(Updater.getText(Updater.API + "/repos/sampledhead-dot/SH-apps/releases/latest"));
+            String v = String.valueOf(rel.get("tag_name")).replaceFirst("^apps-v", "");
+            if (!Updater.newer(versionName(), v)) return;
+            android.content.SharedPreferences sp = getSharedPreferences("actualizaciones", MODE_PRIVATE);
+            if (v.equals(sp.getString("avisado", ""))) return;
+            String url = String.valueOf(rel.get("html_url")), want = getString(R.string.app_name).replaceAll("[^A-Za-z0-9]+", "-") + "-" + v + "-Android.apk";
+            Object assets = rel.get("assets");
+            if (assets instanceof java.util.List) for (Object o : (java.util.List<?>) assets) { @SuppressWarnings("unchecked") Map<String, Object> a = (Map<String, Object>) o; if (want.equals(a.get("name"))) url = String.valueOf(a.get("browser_download_url")); }
+            final String go = url;
+            ui.post(() -> { if (isFinishing()) return; sp.edit().putString("avisado", v).apply();
+                new AlertDialog.Builder(this).setTitle("Versión nueva del programa (v" + v + ")")
+                    .setMessage("Tienes la v" + versionName() + ". La app se actualiza sola, pero esta mejora es del propio programa: descarga el APK e instálalo encima (tus datos se conservan).")
+                    .setPositiveButton("Descargar", (dl, w) -> { try { startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(go))); } catch (Exception e) { toast("No se pudo abrir el navegador"); } })
+                    .setNegativeButton("Ahora no", null).show(); });
+        } catch (Exception e) { log("aviso", "comprobación del programa: " + e.getMessage()); }
     }
 
     void goBack() { if (web != null && web.canGoBack()) web.goBack(); else finish(); }
@@ -289,6 +378,6 @@ public class MainActivity extends Activity {
     }
 
     @Override protected void onPause() { super.onPause(); if (web != null) web.onPause(); }
-    @Override protected void onResume() { super.onResume(); if (web != null) web.onResume(); }
+    @Override protected void onResume() { super.onResume(); if (web != null) web.onResume(); if (upd != null && upd.lastCheck() > 0 && System.currentTimeMillis() - upd.lastCheck() > 6 * 3600 * 1000L) checkUpdates(false); }
     @Override protected void onDestroy() { if (web != null) { web.destroy(); web = null; } super.onDestroy(); }
 }

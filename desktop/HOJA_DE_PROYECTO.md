@@ -1,6 +1,6 @@
 # SampledHead Apps nativas (Windows · Mac · Android) — Hoja de proyecto
 
-**Versión actual:** 1.1.0 (18-11-2026) · etiqueta de descargas `apps-v1.0.0` (versión de los paquetes 1.0.0)
+**Versión actual:** 1.2.0 (18-11-2026) · etiqueta de descargas `apps-v1.1.0` (versión de los paquetes 1.1.0)
 **Descargas:** https://github.com/sampledhead-dot/SH-apps/releases/latest
 
 ## Descripción
@@ -56,6 +56,21 @@ la app para Apple Silicon y para Intel por separado (la «universal» y el DMG s
 `rcodesign` les pone firma ad-hoc. Los **plugins** (JUCE) sí necesitan un Mac para compilarse: sus trabajos de Mac
 quedan como opcionales (Run workflow → mac) para no generar correos de error.
 
+## Actualizaciones automáticas (desde los paquetes 1.1.0)
+Las apps de Windows, Mac y Android **se actualizan solas** cuando cambia la web de la app en GitHub; no hace falta recompilar ni reinstalar.
+- **Contenido (la web):** `desktop/app/updater.js` en escritorio y `android/.../Updater.java` en Android funcionan igual:
+  1. Al abrir la app (a los 8 s) y cada 6 h, se consulta a GitHub el último commit del repo de la app: 1 consulta a la API pública; el límite es de 60 por hora y conexión.
+  2. Si cambió, se pide su lista de archivos (1 consulta más) y **solo se descargan los que cambiaron**, de `raw.githubusercontent.com`, fijados a ese commit. Los demás se copian de la versión actual. Cada archivo se verifica con su huella de git (SHA-1 del blob).
+  3. Se prepara en `<datos de la app>/contenido/<commit>/` y solo se activa si está completo. Entonces aparece «Hay una versión nueva · Recargar ahora / Al volver a abrir».
+  4. Se sirve con **el mismo origen** (`shapp://app/` o `https://appassets.androidplatform.net/`), así que proyectos, ajustes y presets se conservan.
+  5. **Vuelta atrás automática:** si la versión nueva no carga, se cae o la página sale vacía, se vuelve a la anterior (o a la incluida), se guarda un informe y ese commit no se vuelve a descargar.
+  6. Al instalar un programa nuevo (con una web incluida más reciente), manda la incluida.
+  7. Se aplican las mismas exclusiones que al empaquetar (`exclude` de `apps.json`, `.git`, `.github`, `node_modules`). Tope: 300 MB.
+- **Programa (el envoltorio):** al buscar contenido, también se mira la última release `apps-vX.Y.Z`. Si es más nueva que la instalada, la app avisa una vez con «Descargar», que abre el instalador o APK de su sistema. Solo hace falta cuando cambia el envoltorio: subir `wrapperVersion` en `apps.json`.
+- Escritorio: menú **Ayuda → Buscar actualizaciones** y **Volver a la versión incluida en el programa**. «Acerca de» muestra el commit en uso.
+- El informe de error incluye el estado (`Contenido: …`).
+- Pruebas: `SH_UPDATE_API`/`SH_UPDATE_RAW` apuntan a un servidor de prueba y `SH_USERDATA` fija la carpeta de datos con `SH_SELFTEST`.
+
 ## Arquitectura
 - **Electron** (Chromium, el mismo motor con el que se prueban las webs) + **electron-builder**.
 - `app/main.js` — envoltorio común:
@@ -93,12 +108,15 @@ quedan como opcionales (Run workflow → mac) para no generar correos de error.
 - Informe de error .txt automático y opción manual en el menú Ayuda.
 
 ## Historial de versiones
+- **1.2.0** (18-11-2026): **actualizaciones automáticas** del contenido y aviso de programa nuevo (paquetes 1.1.0, release `apps-v1.1.0`; la anterior se retira).
+  Probado con un servidor que imita a GitHub y el historial real de Pop!Pads (v1.13 incluida → v1.14 descargada): solo baja los 3 archivos cambiados (232 KB, 2 consultas). Probado con Electron real: dos arranques y vuelta atrás con una versión estropeada. El APK compila y se firma; **no se ha probado en un móvil**.
 - **1.1.0** (18-11-2026): versiones **Android (APK)**; **Mac generado en Linux** (zip Apple Silicon + Intel con firma ad-hoc);
   una sola release `apps-vX.Y.Z` para las tres plataformas (se borra la antigua `escritorio-v1.0.0`).
 - **1.0.0** (18-11-2026): primera versión. 9 apps (el portal SH-apps queda fuera por decisión: solo web), Windows (instalador) y Mac (DMG universal), publicación en Releases,
   enlace en el portal (portal v9).
 
 ## Límites conocidos
+- **Actualizaciones:** necesitan internet al abrir la app (sin conexión se sigue usando la última versión descargada o la incluida). Si GitHub limita las consultas (60/h por conexión), se reintenta más tarde. La versión 1.1.0 hay que instalarla a mano una vez; las anteriores (1.0.0) no saben actualizarse. En Mac, el programa nuevo (no el contenido) se sustituye a mano en Aplicaciones.
 - **Sin firma de código**: Windows muestra «Windows protegió su PC» (Más información → Ejecutar de todas formas) y Mac pide
   clic derecho → Abrir la primera vez (o `xattr -cr "/Applications/App.app"`). Firmar requiere certificados de pago
   (Apple Developer y uno de Windows).

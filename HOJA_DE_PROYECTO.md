@@ -48,6 +48,7 @@ Si se cambia el logo, hay que volver a recortar las tres capas y revisar las med
 - v6 — nueva app: TonoPad (`Tono-Pad/`, icono SVG en su manifest).
 - v7 — el portal ya se puede instalar en el móvil (PWA): `manifest.webmanifest`, `sw.js`, iconos 192/512/maskable/apple-touch, botón "Instalar" y aviso para iPhone.
 - v8 — nueva app: FuzzHead (`FuzzHead/`, sintetizador para guitarra y bajo; icono PNG en su manifest, copia en `icons/fuzzhead.png`).
+- v12 — enlaces de reserva de descargas actualizados a la versión 1.1.0 de las apps (la primera que se actualiza sola).
 - v11 — **cada tarjeta abre sus versiones**: web, Windows, Mac (Apple Silicon e Intel), Android y, en Tuner y FuzzHead, el VST. Descargas leídas en directo de GitHub Releases con reserva, opción «para tu dispositivo», ayuda de instalación y enlaces directos `#app=`. Script `scripts/build_standalone.py`.
 - v10 — el enlace del pie pasa a «Descargar apps (Windows · Mac · Android)»: ahora hay también versiones Mac y Android. El portal sigue siendo solo web.
 - v9 — versiones de escritorio (Windows/Mac) de las apps (el portal se queda solo como web, sin escritorio ni VST): carpeta `desktop/` + workflow `.github/workflows/desktop.yml` que las publica en Releases; enlace «Apps de escritorio (Windows / Mac)» en el pie. Detalles en `desktop/HOJA_DE_PROYECTO.md`.
