@@ -4,7 +4,7 @@
    (su manifest.webmanifest o su archivo de logo). Si no se puede leer, se usa la
    copia guardada en icons/, y si tampoco, el emoji. */
 
-const VERSION = "v8";
+const VERSION = "v9";
 const BASE = "https://sampledhead-dot.github.io/";
 const MAIN_LOGO = "logo.png";
 const EYE_WHITE = "eye-white.png";

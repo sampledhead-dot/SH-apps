@@ -1,0 +1,138 @@
+# Versiones de escritorio (Windows y Mac) de todas las apps de Sampled Head.
+# - Se ejecuta al cambiar desktop/, cada lunes (para recoger las novedades de cada app) o a mano en Actions → desktop → Run workflow.
+# - Descarga cada app de su repositorio, la empaqueta con el envoltorio de desktop/app y publica los instaladores
+#   en Releases (etiqueta escritorio-vX.Y.Z). Las apps cuyo repositorio no exista todavía se saltan con un aviso.
+name: desktop
+
+on:
+  workflow_dispatch:
+    inputs:
+      apps:
+        description: "Apps a compilar (ids separados por comas; vacío = todas). Ej.: tuner,fuzzhead"
+        required: false
+        default: ""
+      publicar:
+        description: "Publicar los instaladores en Releases"
+        type: boolean
+        default: true
+  push:
+    branches: [main]
+    paths: ["desktop/**", ".github/workflows/desktop.yml"]
+  schedule:
+    - cron: "23 4 * * 1"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: desktop
+  cancel-in-progress: false
+
+jobs:
+  setup:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.m.outputs.matrix }}
+      version: ${{ steps.m.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: m
+        env:
+          APPS: ${{ github.event.inputs.apps }}
+        run: |
+          node -e '
+            const l = require("./desktop/apps.json");
+            const want = (process.env.APPS || "").split(",").map(s => s.trim()).filter(Boolean);
+            const apps = l.apps.filter(a => !want.length || want.includes(a.id));
+            const include = [];
+            for (const os of ["windows-latest", "macos-latest"]) for (const a of apps) include.push({ os, id: a.id, repo: a.repo });
+            require("fs").appendFileSync(process.env.GITHUB_OUTPUT, "matrix=" + JSON.stringify({ include }) + "\nversion=" + l.wrapperVersion + "\n");
+          '
+
+  build:
+    needs: setup
+    name: ${{ matrix.id }} (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      max-parallel: 10
+      matrix: ${{ fromJSON(needs.setup.outputs.matrix) }}
+    env:
+      ELECTRON_SKIP_BINARY_DOWNLOAD: "1"
+      CSC_IDENTITY_AUTO_DISCOVERY: "false"
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Descargar la app
+        id: src
+        run: |
+          if [ "${{ matrix.repo }}" = "SH-apps" ]; then
+            echo "dir=$GITHUB_WORKSPACE" >> "$GITHUB_OUTPUT"; echo "ok=true" >> "$GITHUB_OUTPUT"; exit 0
+          fi
+          if git clone --depth 1 "https://github.com/sampledhead-dot/${{ matrix.repo }}.git" "$RUNNER_TEMP/src"; then
+            echo "dir=$RUNNER_TEMP/src" >> "$GITHUB_OUTPUT"; echo "ok=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "::warning title=${{ matrix.id }}::El repositorio ${{ matrix.repo }} no existe o no es accesible; se salta."
+            echo "ok=false" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Instalar herramientas
+        if: steps.src.outputs.ok == 'true'
+        working-directory: desktop
+        run: npm ci --no-audit --no-fund
+      - name: Preparar
+        if: steps.src.outputs.ok == 'true'
+        working-directory: desktop
+        run: node scripts/prepare.js "${{ matrix.id }}" "${{ steps.src.outputs.dir }}" "build/${{ matrix.id }}"
+      - name: Empaquetar (Windows)
+        if: steps.src.outputs.ok == 'true' && runner.os == 'Windows'
+        working-directory: desktop
+        run: npx electron-builder --projectDir "build/${{ matrix.id }}" --win --publish never
+      - name: Empaquetar (Mac)
+        if: steps.src.outputs.ok == 'true' && runner.os == 'macOS'
+        working-directory: desktop
+        run: |
+          # firma ad-hoc (sin certificado de Apple); si falla, sin firma
+          npx electron-builder --projectDir "build/${{ matrix.id }}" --mac --publish never \
+            || npx electron-builder --projectDir "build/${{ matrix.id }}" --mac --publish never -c.mac.identity=null
+      - uses: actions/upload-artifact@v4
+        if: steps.src.outputs.ok == 'true'
+        with:
+          name: ${{ matrix.id }}-${{ runner.os }}
+          path: |
+            desktop/build/${{ matrix.id }}/dist/*.exe
+            desktop/build/${{ matrix.id }}/dist/*.dmg
+          if-no-files-found: error
+
+  release:
+    needs: [setup, build]
+    if: always() && needs.setup.result == 'success' && (github.event_name != 'workflow_dispatch' || github.event.inputs.publicar == 'true')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: out
+          merge-multiple: true
+      - name: Publicar en Releases
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: escritorio-v${{ needs.setup.outputs.version }}
+        run: |
+          ls -la out
+          [ -n "$(ls out 2>/dev/null)" ] || { echo "No hay instaladores que publicar"; exit 1; }
+          NOTES="Versiones de escritorio de las apps de Sampled Head (envoltorio v${{ needs.setup.outputs.version }}).
+
+          - **Windows**: descarga el \`-Windows-Setup.exe\` de la app. Si aparece «Windows protegió su PC», pulsa *Más información → Ejecutar de todas formas* (los instaladores no están firmados).
+          - **Mac** (Intel y Apple Silicon): abre el \`-Mac.dmg\` y arrastra la app a Aplicaciones. La primera vez, clic derecho sobre la app → *Abrir*. Si dice que está dañada: \`xattr -cr \"/Applications/Nombre.app\"\` en Terminal.
+
+          Compilado el $(date -u +%Y-%m-%d) a partir de la última versión de cada app."
+          if gh release view "$TAG" -R "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            gh release edit "$TAG" -R "$GITHUB_REPOSITORY" --notes "$NOTES" --latest
+            gh release upload "$TAG" out/* -R "$GITHUB_REPOSITORY" --clobber
+          else
+            gh release create "$TAG" out/* -R "$GITHUB_REPOSITORY" --title "Apps de escritorio v${{ needs.setup.outputs.version }}" --notes "$NOTES" --latest
+          fi

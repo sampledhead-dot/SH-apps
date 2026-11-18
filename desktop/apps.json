@@ -1,0 +1,16 @@
+{
+  "wrapperVersion": "1.0.0",
+  "electronVersion": "45.3.4",
+  "apps": [
+    { "id": "portal",     "name": "SampledHead Apps",    "productName": "SampledHead Apps",    "repo": "SH-apps",            "color": "#d65f00", "exclude": ["portal-standalone.html", "desktop", "README.md", "HOJA_DE_PROYECTO.md"] },
+    { "id": "sampler",    "name": "SampledHead App",     "productName": "SampledHead App",     "repo": "sampledhead-app",    "color": "#d65f00", "exclude": [] },
+    { "id": "crazyhead",  "name": "CrazyHead",           "productName": "CrazyHead",           "repo": "CrazyHead",          "color": "#111111", "exclude": [] },
+    { "id": "editor",     "name": "SampledHead Editor",  "productName": "SampledHead Editor",  "repo": "sampledhead-editor", "color": "#111111", "exclude": [] },
+    { "id": "spb",        "name": "Sample Pack Builder", "productName": "Sample Pack Builder", "repo": "spb-head",           "color": "#111111", "exclude": ["spb-standalone.html"] },
+    { "id": "poppads",    "name": "Pop!Pads",            "productName": "PopPads",             "repo": "poppads",            "color": "#111111", "exclude": [] },
+    { "id": "chuleta",    "name": "Chuleta Beat",        "productName": "Chuleta Beat",        "repo": "Chuleta-beat",       "color": "#111111", "exclude": [] },
+    { "id": "tuner",      "name": "SampledHead Tuner",   "productName": "SampledHead Tuner",   "repo": "Sampledhead-tuner",  "color": "#111111", "exclude": [] },
+    { "id": "tonopad",    "name": "TonoPad",             "productName": "TonoPad",             "repo": "Tono-Pad",           "color": "#111111", "exclude": [] },
+    { "id": "fuzzhead",   "name": "FuzzHead",            "productName": "FuzzHead",            "repo": "FuzzHead",           "color": "#17130f", "exclude": ["vst", "tests", "web", "dist", "build_web.js"] }
+  ]
+}

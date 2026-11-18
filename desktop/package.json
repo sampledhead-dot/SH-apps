@@ -1,0 +1,14 @@
+{
+  "name": "sampledhead-desktop",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Versiones de escritorio (Windows/Mac) de las apps de Sampled Head",
+  "scripts": {
+    "prepare-app": "node scripts/prepare.js",
+    "selftest": "node scripts/selftest.js"
+  },
+  "devDependencies": {
+    "electron": "45.3.4",
+    "electron-builder": "26.0.12"
+  }
+}

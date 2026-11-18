@@ -1,7 +1,7 @@
-/* SampledHead Portal · service worker v8
+/* SampledHead Portal · service worker v9
    Solo guarda en caché los archivos del propio portal. Las demás apps (y la lectura en
    directo de sus iconos) pasan siempre directas a la red, sin tocarlas. */
-const C = 'sampledhead-portal-v8';
+const C = 'sampledhead-portal-v9';
 const FILES = ['./', 'index.html', 'styles.css', 'app.js', 'logo.png', 'manifest.webmanifest',
   'eye-white.png', 'eye-pupil.png', 'eye-lid.png', 'icon-192.png', 'icon-512.png',
   'icons/sampledhead-app.png', 'icons/crazyhead.png', 'icons/editor.png', 'icons/spb.svg',
