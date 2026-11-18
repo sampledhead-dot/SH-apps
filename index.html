@@ -32,6 +32,35 @@
     <section id="apps" class="grid" aria-label="Lista de apps"></section>
   </main>
 
+  <dialog id="sheet" class="sheet" aria-labelledby="sh-name">
+    <div class="sh-in">
+      <button id="sh-close" class="sh-close" type="button" aria-label="Cerrar">✕</button>
+      <div class="sh-head">
+        <div id="sh-icon" class="sh-icon"></div>
+        <div><h2 id="sh-name"></h2><p id="sh-desc"></p></div>
+      </div>
+      <div id="sh-web" class="opts"></div>
+      <h3>Descargar e instalar</h3>
+      <p id="sh-state" class="sh-state"></p>
+      <div id="sh-dl" class="opts"></div>
+      <div id="sh-vst" hidden>
+        <h3>Plugin para tu DAW</h3>
+        <div id="sh-vstlist" class="opts"></div>
+      </div>
+      <details class="sh-help">
+        <summary>¿Cómo se instala?</summary>
+        <ul>
+          <li><b>Windows:</b> abre el .exe. Si aparece «Windows protegió tu PC», pulsa <i>Más información → Ejecutar de todas formas</i> (la app no tiene certificado de pago).</li>
+          <li><b>Mac:</b> descomprime el .zip y mueve la app a Aplicaciones. La primera vez ábrela con <i>clic derecho → Abrir</i>. Si dice que está dañada: Ajustes del Sistema → Privacidad y seguridad → <i>Abrir igualmente</i>.</li>
+          <li><b>Android:</b> abre el .apk descargado y permite «instalar apps desconocidas» para tu navegador o gestor de archivos.</li>
+          <li><b>iPhone / iPad:</b> usa la versión web y, en Safari, <i>Compartir → Añadir a pantalla de inicio</i>.</li>
+          <li><b>VST:</b> copia la carpeta .vst3 del zip en <i>C:\Program Files\Common Files\VST3</i> y reescanea plugins en tu DAW. En el zip va también la versión Standalone.</li>
+        </ul>
+      </details>
+      <a id="sh-all" class="sh-all" target="_blank" rel="noopener" href="https://github.com/sampledhead-dot/SH-apps/releases/latest">Ver todas las descargas en GitHub ›</a>
+    </div>
+  </dialog>
+
   <footer>
     <nav class="links" aria-label="Contacto y redes">
       <a href="https://github.com/sampledhead-dot/SH-apps/releases/latest" target="_blank" rel="noopener">
@@ -55,7 +84,7 @@
       <button id="install-btn" type="button" hidden>📲 Instalar en el móvil</button>
       <p id="install-ios" hidden>En iPhone: pulsa <b>Compartir</b> y luego <b>Añadir a pantalla de inicio</b>.</p>
     </div>
-    <p class="small">© <span id="year"></span> SampledHead · Portal <strong id="version">v10</strong></p>
+    <p class="small">© <span id="year"></span> SampledHead · Portal <strong id="version">v11</strong></p>
     <button id="report-btn" type="button">Descargar informe (.txt)</button>
   </footer>
 

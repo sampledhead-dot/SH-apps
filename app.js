@@ -1,35 +1,40 @@
-/* SampledHead · Portal de apps · v7
+/* SampledHead · Portal de apps · v11 (cada tarjeta abre sus versiones: web, Windows, Mac, Android y VST)
    Añadir una app: copia un bloque de APPS.
    Logos: cada vez que se abre el portal se lee el icono ACTUAL de cada app
    (su manifest.webmanifest o su archivo de logo). Si no se puede leer, se usa la
    copia guardada en icons/, y si tampoco, el emoji. */
 
-const VERSION = "v10";
+const VERSION = "v11";
 const BASE = "https://sampledhead-dot.github.io/";
 const MAIN_LOGO = "logo.png";
 const EYE_WHITE = "eye-white.png";
 const EYE_PUPIL = "eye-pupil.png";
 const EYE_LID = "eye-lid.png";
 const LIVE_TIMEOUT_MS = 6000;
+/* Descargas: se leen en directo de GitHub Releases. Si no se puede (sin red, límite de la API),
+   se usan estos enlaces de reserva: actualiza DL_FALLBACK cuando cambie la versión de las apps. */
+const GH = "https://github.com/sampledhead-dot/";
+const GH_API = "https://api.github.com/repos/sampledhead-dot/";
+const DL_FALLBACK = { tag: "apps-v1.0.0", version: "1.0.0" };
 
 const APPS = [
-  { name: "SampledHead App", url: BASE + "sampledhead-app/", manifest: "manifest.webmanifest", local: "icons/sampledhead-app.png",
+  { name: "SampledHead App", dl: "SampledHead-App", url: BASE + "sampledhead-app/", manifest: "manifest.webmanifest", local: "icons/sampledhead-app.png",
     desc: "Sampler de pads en el navegador: graba, edita, haz loops y exporta a Koala, Ableton, MPC y SP-404.", emoji: "🥁" },
-  { name: "CrazyHead", url: BASE + "CrazyHead/", manifest: "manifest.webmanifest", local: "icons/crazyhead.png",
+  { name: "CrazyHead", dl: "CrazyHead", url: BASE + "CrazyHead/", manifest: "manifest.webmanifest", local: "icons/crazyhead.png",
     desc: "Sampler con generador de secuencias aleatorias, cuatro pistas y efectos.", emoji: "🌀" },
-  { name: "SampledHead Editor", url: BASE + "sampledhead-editor/", manifest: "manifest.webmanifest", local: "icons/editor.png",
+  { name: "SampledHead Editor", dl: "SampledHead-Editor", url: BASE + "sampledhead-editor/", manifest: "manifest.webmanifest", local: "icons/editor.png",
     desc: "Editor de audio y masterización: recorta, limpia, separa stems con IA y exporta en WAV o MP3.", emoji: "🎚️" },
-  { name: "Sample Pack Builder", url: BASE + "spb-head/", liveIcon: "logo.svg", local: "icons/spb.svg",
+  { name: "Sample Pack Builder", dl: "Sample-Pack-Builder", url: BASE + "spb-head/", liveIcon: "logo.svg", local: "icons/spb.svg",
     desc: "Sube una canción, separa stems y obtén breaks, loops, golpes, notas y acordes en un ZIP.", emoji: "📦" },
-  { name: "Pop!Pads", url: BASE + "poppads/", manifest: "manifest.webmanifest", local: "icons/poppads.png",
+  { name: "Pop!Pads", dl: "PopPads", url: BASE + "poppads/", manifest: "manifest.webmanifest", local: "icons/poppads.png",
     desc: "Beat maker de pads para el móvil: graba tu ritmo, cuantiza y toca con tu propia voz.", emoji: "🎤" },
-  { name: "Chuleta Beat", url: BASE + "Chuleta-beat/", manifest: "manifest.webmanifest", local: "icons/chuleta-beat.png",
+  { name: "Chuleta Beat", dl: "Chuleta-Beat", url: BASE + "Chuleta-beat/", manifest: "manifest.webmanifest", local: "icons/chuleta-beat.png",
     desc: "Buscador de atajos en castellano para SP-404MKII, MPC Sample, Ableton Move y BOSS VE-22.", emoji: "📋" },
-  { name: "SampledHead Tuner", url: BASE + "Sampledhead-tuner/", manifest: "manifest.webmanifest", local: "icons/tuner.png",
+  { name: "SampledHead Tuner", dl: "SampledHead-Tuner", vst: { repo: "Sampledhead-tuner", tag: "vst-v1.0.0", file: "SampledHead-Tuner-VST-1.0.0-Windows.zip" }, url: BASE + "Sampledhead-tuner/", manifest: "manifest.webmanifest", local: "icons/tuner.png",
     desc: "Afinador y acordes para tu instrumento, listo para usar desde el móvil.", emoji: "🎸" },
-  { name: "TonoPad", url: BASE + "Tono-Pad/", manifest: "manifest.webmanifest", local: "icons/tonopad.svg",
+  { name: "TonoPad", dl: "TonoPad", url: BASE + "Tono-Pad/", manifest: "manifest.webmanifest", local: "icons/tonopad.svg",
     desc: "Detecta el tono y la escala de un audio y genera bancos de 16 pads afinados para SP-404MKII, Move, MPC Sample y Live.", emoji: "🎹" },
-  { name: "FuzzHead", url: BASE + "FuzzHead/", manifest: "manifest.webmanifest", local: "icons/fuzzhead.png",
+  { name: "FuzzHead", dl: "FuzzHead", vst: { repo: "FuzzHead", tag: "vst-v1.0.1", file: "FuzzHead-VST-1.0.1-Windows.zip" }, url: BASE + "FuzzHead/", manifest: "manifest.webmanifest", local: "icons/fuzzhead.png",
     desc: "Convierte tu guitarra o bajo en sintetizador: 5 motores, distorsión, bitcrush, ring mod y gated reverb.", emoji: "🎛️" }
 ];
 
@@ -225,9 +230,10 @@ function initInstall() {
 }
 
 function createCard(app) {
-  const a = document.createElement("a");
-  a.className = "card"; a.href = app.url; a.target = "_blank"; a.rel = "noopener";
-  a.setAttribute("aria-label", "Abrir " + app.name);
+  const a = document.createElement("button");
+  a.type = "button"; a.className = "card";
+  a.setAttribute("aria-label", app.name + ": abrir o descargar");
+  a.addEventListener("click", () => openSheet(app));
 
   const fallback = document.createElement("div");
   fallback.className = "icon-fallback"; fallback.textContent = app.emoji;
@@ -245,7 +251,140 @@ function createCard(app) {
 
   a.append(fallback, info, arrow);
   loadIcon(app, img, fallback);
+  app._img = img;
   return a;
+}
+
+/* ---------- Hoja de versiones y descargas ---------- */
+function slug(app) { return app.dl.toLowerCase(); }
+function detectOS() {
+  const ua = navigator.userAgent || "", pl = (navigator.userAgentData && navigator.userAgentData.platform) || navigator.platform || "";
+  if (/android/i.test(ua)) return "android";
+  if (/iphone|ipad|ipod/i.test(ua) || (pl === "MacIntel" && navigator.maxTouchPoints > 1)) return "ios";
+  if (/win/i.test(pl) || /windows/i.test(ua)) return "windows";
+  if (/mac/i.test(pl) || /mac os/i.test(ua)) return "mac";
+  if (/linux/i.test(pl)) return "linux";
+  return "otro";
+}
+const OS = detectOS();
+const KINDS = [
+  { id: "win", re: /-Windows-Setup\.exe$/i, os: "windows", ico: "🪟", t: "Windows", s: "Instalador (.exe) · Windows 10/11" },
+  { id: "macA", re: /-Mac-AppleSilicon\.zip$/i, os: "mac", ico: "🍎", t: "Mac · Apple Silicon", s: "M1, M2, M3, M4… (.zip)" },
+  { id: "macI", re: /-Mac-Intel\.zip$/i, os: "mac", ico: "🍏", t: "Mac · Intel", s: "Macs con procesador Intel (.zip)" },
+  { id: "apk", re: /-Android\.apk$/i, os: "android", ico: "🤖", t: "Android", s: "App (.apk) · Android 10 o superior" }
+];
+
+let releaseP = null;
+function cachedJSON(key, url) {
+  try { const c = JSON.parse(sessionStorage.getItem(key) || "null"); if (c && Date.now() - c.t < 30 * 60 * 1000) return Promise.resolve(c.d); } catch (e) {}
+  return fetchNoCache(url, "json").then(d => { try { sessionStorage.setItem(key, JSON.stringify({ t: Date.now(), d })); } catch (e) {} return d; });
+}
+/* Lista de archivos de las apps de escritorio y Android: [{name, url, size}] */
+function appsRelease() {
+  if (!releaseP) releaseP = cachedJSON("sh-rel-apps", GH_API + "SH-apps/releases/latest")
+    .then(r => ({ live: true, tag: r.tag_name, assets: (r.assets || []).map(a => ({ name: a.name, url: a.browser_download_url, size: a.size })) }))
+    .catch(e => { console.warn("descargas: uso los enlaces de reserva (" + (e && e.message || e) + ")"); releaseP = null; return { live: false, tag: DL_FALLBACK.tag, assets: null }; });
+  return releaseP;
+}
+function vstRelease(app) {
+  return cachedJSON("sh-rel-vst-" + app.vst.repo, GH_API + app.vst.repo + "/releases?per_page=20")
+    .then(list => {
+      const r = (list || []).filter(x => /^vst-v/.test(x.tag_name) && !x.draft)[0];
+      const a = r && (r.assets || []).filter(x => /VST.*\.zip$/i.test(x.name));
+      if (!a || !a.length) throw new Error("sin release VST");
+      return a.map(x => ({ name: x.name, url: x.browser_download_url, size: x.size, tag: r.tag_name }));
+    })
+    .catch(() => [{ name: app.vst.file, url: GH + app.vst.repo + "/releases/download/" + app.vst.tag + "/" + app.vst.file, size: 0, tag: app.vst.tag }]);
+}
+function fmtSize(b) { return !b ? "" : b >= 1e6 ? Math.round(b / 1e6) + " MB" : Math.max(1, Math.round(b / 1e3)) + " KB"; }
+function verOf(name) { const m = name.match(/-(\d+\.\d+\.\d+)-/); return m ? "v" + m[1] : ""; }
+
+function optEl(o) {
+  const a = document.createElement("a");
+  a.className = "opt" + (o.primary ? " primary" : "") + (o.mine ? " mine" : "");
+  a.href = o.url; a.target = "_blank"; a.rel = "noopener";
+  if (o.download) a.setAttribute("download", "");
+  a.innerHTML = '<span class="o-ico" aria-hidden="true"></span><span class="o-txt"><b></b><small></small></span><span class="o-meta"></span>';
+  a.querySelector(".o-ico").textContent = o.ico;
+  a.querySelector("b").textContent = o.t;
+  a.querySelector("small").textContent = o.s;
+  a.querySelector(".o-meta").textContent = o.meta || "";
+  if (o.mine) { const tag = document.createElement("em"); tag.textContent = "para tu dispositivo"; a.querySelector(".o-txt").appendChild(tag); }
+  a.addEventListener("click", () => step("descarga/apertura: " + o.t + " · " + o.url));
+  return a;
+}
+
+let sheetApp = null;
+async function openSheet(app) {
+  step("abrir hoja de " + app.name);
+  sheetApp = app;
+  const dlg = document.getElementById("sheet");
+  document.getElementById("sh-name").textContent = app.name;
+  document.getElementById("sh-desc").textContent = app.desc;
+  const ic = document.getElementById("sh-icon");
+  ic.innerHTML = "";
+  if (app._img && app._img.complete && app._img.naturalWidth) { const im = new Image(); im.src = app._img.src; im.alt = ""; ic.appendChild(im); }
+  else ic.textContent = app.emoji;
+
+  const web = document.getElementById("sh-web"); web.innerHTML = "";
+  web.appendChild(optEl({ ico: "🌐", t: "Abrir versión web", s: "En el navegador, sin instalar nada. Funciona en móvil, tablet y ordenador.", url: app.url, primary: true, mine: OS === "ios" || OS === "linux" }));
+
+  const list = document.getElementById("sh-dl"), state = document.getElementById("sh-state");
+  list.innerHTML = ""; state.textContent = "Buscando las últimas versiones…"; state.hidden = false;
+  document.getElementById("sh-vst").hidden = !app.vst;
+  const vbox = document.getElementById("sh-vstlist"); vbox.innerHTML = "";
+  document.getElementById("sh-all").href = GH + "SH-apps/releases/latest";
+  location.hash = "app=" + slug(app);
+  if (!dlg.open) { if (dlg.showModal) dlg.showModal(); else dlg.setAttribute("open", ""); }
+  document.body.classList.add("sheet-open");
+
+  const rel = await appsRelease();
+  if (sheetApp !== app) return;
+  const opts = [];
+  KINDS.forEach(k => {
+    let a = null;
+    if (rel.assets) a = rel.assets.filter(x => x.name.indexOf(app.dl + "-") === 0 && k.re.test(x.name) && /^\d/.test(x.name.slice(app.dl.length + 1)))[0];
+    else {
+      const suf = { win: "Windows-Setup.exe", macA: "Mac-AppleSilicon.zip", macI: "Mac-Intel.zip", apk: "Android.apk" }[k.id];
+      const n = app.dl + "-" + DL_FALLBACK.version + "-" + suf;
+      a = { name: n, url: GH + "SH-apps/releases/download/" + DL_FALLBACK.tag + "/" + n, size: 0 };
+    }
+    if (a) opts.push({ ico: k.ico, t: k.t, s: k.s, url: a.url, download: true, meta: [verOf(a.name), fmtSize(a.size)].filter(Boolean).join(" · "), mine: k.os === OS, os: k.os });
+  });
+  opts.sort((x, y) => (y.mine ? 1 : 0) - (x.mine ? 1 : 0));
+  opts.forEach(o => list.appendChild(optEl(o)));
+  state.hidden = !!opts.length && rel.live;
+  state.textContent = !opts.length ? "Esta app aún no tiene versión descargable. Usa la versión web." :
+    "No he podido consultar GitHub ahora mismo: estos enlaces son de la última versión conocida (" + DL_FALLBACK.tag + ").";
+  if (app.vst) {
+    const v = await vstRelease(app);
+    if (sheetApp !== app) return;
+    v.forEach(a => {
+      const plat = /Mac/i.test(a.name) ? "Mac" : /Linux/i.test(a.name) ? "Linux" : "Windows";
+      vbox.appendChild(optEl({ ico: "🎛️", t: "Plugin VST3 + Standalone · " + plat, s: "Para tu DAW (Ableton, Reaper, FL…) y app de escritorio con baja latencia (.zip)", url: a.url, download: true,
+        meta: [a.tag.replace("vst-", ""), fmtSize(a.size)].filter(Boolean).join(" · "), mine: false }));
+    });
+  }
+}
+function closeSheet() {
+  const dlg = document.getElementById("sheet");
+  sheetApp = null;
+  if (dlg.open) { if (dlg.close) dlg.close(); else dlg.removeAttribute("open"); }
+  document.body.classList.remove("sheet-open");
+  if (/^#app=/.test(location.hash)) history.replaceState(null, "", location.pathname + location.search);
+}
+function initSheet() {
+  const dlg = document.getElementById("sheet");
+  document.getElementById("sh-close").addEventListener("click", closeSheet);
+  dlg.addEventListener("close", () => { if (sheetApp) closeSheet(); });
+  dlg.addEventListener("click", e => { if (e.target === dlg) closeSheet(); });   // clic fuera
+  const fromHash = () => {
+    const m = location.hash.match(/^#app=([\w-]+)/);
+    const app = m && APPS.filter(a => slug(a) === m[1].toLowerCase())[0];
+    if (app && sheetApp !== app) openSheet(app);
+  };
+  window.addEventListener("hashchange", fromHash);
+  fromHash();
 }
 
 try {
@@ -259,6 +398,8 @@ try {
   document.getElementById("year").textContent = new Date().getFullYear();
   document.getElementById("version").textContent = VERSION;
   document.getElementById("report-btn").addEventListener("click", () => downloadReport("botón manual"));
+  step("hoja de descargas");
+  initSheet();
   step("instalación");
   initInstall();
   step("listo");

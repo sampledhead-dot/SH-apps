@@ -10,7 +10,18 @@ Página índice (GitHub Pages) con todas las apps de SampledHead: logo arriba, u
 - `logo.png` — logo de SampledHead (720 px de ancho, fondo transparente).
 - `eye-white.png`, `eye-pupil.png`, `eye-lid.png` — recortes del logo original para animar el ojo (blanco del ojo sin pupila, pupila y párpado).
 - `icons/` — copia de seguridad del icono de cada app (se usa solo si no se puede leer el icono vivo).
-- `portal-standalone.html` — todo en un solo archivo (con imágenes incrustadas) para probar en local/móvil. No se sube al repo.
+- `portal-standalone.html` — todo en un solo archivo (con imágenes incrustadas) para probar en local/móvil. Se genera con `python3 scripts/build_standalone.py`.
+
+## Hoja de versiones y descargas (v11)
+Al pulsar una tarjeta se abre una hoja con todas las versiones de esa app:
+- **Abrir versión web** (siempre la primera).
+- **Descargar e instalar**: Windows (.exe), Mac Apple Silicon y Mac Intel (.zip) y Android (.apk). La lista se lee **en directo** de la última release de SH-apps (`api.github.com/repos/sampledhead-dot/SH-apps/releases/latest`), con versión y tamaño, y se guarda 30 min en `sessionStorage`. Cada app se reconoce por su prefijo `dl` en `APPS` (= `productName` de `desktop/apps.json` con guiones).
+- **Plugin para tu DAW** (solo apps con `vst`: Tuner y FuzzHead): se lee la última release `vst-v*` de su propio repo (zip con VST3 + Standalone).
+- Se marca «para tu dispositivo» la opción que corresponde al sistema detectado (Android → APK, Windows → .exe, Mac → los dos Mac, iPhone → web) y se pone arriba.
+- Si GitHub no responde (sin red o límite de 60 consultas/hora), se usan enlaces de reserva: `DL_FALLBACK` (tag y versión de las apps) y `vst.tag`/`vst.file` de cada app. **Al publicar una nueva versión de las apps o de un VST, actualizar esos valores.**
+- Enlace directo a la hoja de una app: `…/SH-apps/#app=fuzzhead` (`#app=` + prefijo `dl` en minúsculas).
+- Desplegable «¿Cómo se instala?» con los avisos de Windows SmartScreen, Mac (clic derecho → Abrir), Android (apps desconocidas), iPhone (web) y VST.
+- Cerrar: ✕, tecla Esc o tocar fuera. En móvil sale como hoja desde abajo.
 
 ## Iconos que se actualizan solos
 Al abrir el portal, `app.js` lee en directo el `manifest.webmanifest` de cada app (o su `logo.svg` en el caso de Sample Pack Builder), toma el icono "any" más grande y lo muestra. Si cambias el icono en una app y la subes a GitHub Pages, el portal lo muestra sin tocar nada. Orden de preferencia: icono vivo → copia en `icons/` → emoji.
@@ -37,6 +48,7 @@ Si se cambia el logo, hay que volver a recortar las tres capas y revisar las med
 - v6 — nueva app: TonoPad (`Tono-Pad/`, icono SVG en su manifest).
 - v7 — el portal ya se puede instalar en el móvil (PWA): `manifest.webmanifest`, `sw.js`, iconos 192/512/maskable/apple-touch, botón "Instalar" y aviso para iPhone.
 - v8 — nueva app: FuzzHead (`FuzzHead/`, sintetizador para guitarra y bajo; icono PNG en su manifest, copia en `icons/fuzzhead.png`).
+- v11 — **cada tarjeta abre sus versiones**: web, Windows, Mac (Apple Silicon e Intel), Android y, en Tuner y FuzzHead, el VST. Descargas leídas en directo de GitHub Releases con reserva, opción «para tu dispositivo», ayuda de instalación y enlaces directos `#app=`. Script `scripts/build_standalone.py`.
 - v10 — el enlace del pie pasa a «Descargar apps (Windows · Mac · Android)»: ahora hay también versiones Mac y Android. El portal sigue siendo solo web.
 - v9 — versiones de escritorio (Windows/Mac) de las apps (el portal se queda solo como web, sin escritorio ni VST): carpeta `desktop/` + workflow `.github/workflows/desktop.yml` que las publica en Releases; enlace «Apps de escritorio (Windows / Mac)» en el pie. Detalles en `desktop/HOJA_DE_PROYECTO.md`.
 
@@ -47,6 +59,8 @@ Si se cambia el logo, hay que volver a recortar las tres capas y revisar las med
 - Probar en navegador headless antes de entregar.
 
 ## Límites conocidos
+- La hoja de descargas depende de la API pública de GitHub (60 consultas/hora por conexión; se hacen 1–2 por visita). Si se supera, salen los enlaces de reserva con un aviso.
+- Los instaladores no tienen certificado de pago: Windows y Mac muestran un aviso la primera vez (explicado en la propia hoja).
 - La carpeta `desktop/` también la publica GitHub Pages (son solo scripts e iconos; no afecta al portal).
 - Si alguna app cambia de URL, hay que actualizar `APPS` en `app.js`.
 - El Tuner usa `Sampledhead-tuner/` (T minúscula); GitHub Pages distingue mayúsculas.
