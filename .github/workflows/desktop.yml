@@ -107,9 +107,13 @@ jobs:
 
   release:
     needs: [setup, build]
-    if: always() && needs.setup.result == 'success' && (github.event_name != 'workflow_dispatch' || github.event.inputs.publicar == 'true')
+    # no publica si la ejecución se cancela; sí aunque falle alguna app suelta
+    if: ${{ !cancelled() && needs.setup.result == 'success' && (github.event_name != 'workflow_dispatch' || github.event.inputs.publicar == 'true') }}
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v4
+        with:
+          path: repo
       - uses: actions/download-artifact@v4
         with:
           path: out
@@ -133,3 +137,15 @@ jobs:
           else
             gh release create "$TAG" out/* -R "$GITHUB_REPOSITORY" --title "Apps de escritorio v${{ needs.setup.outputs.version }}" --notes "$NOTES" --latest
           fi
+      - name: Quitar descargas de apps que ya no están en la lista
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: escritorio-v${{ needs.setup.outputs.version }}
+        run: |
+          node -e 'const l = require("./repo/desktop/apps.json"); console.log(l.apps.map(a => a.productName.replace(/[^A-Za-z0-9]+/g, "-") + "-" + l.wrapperVersion + "-").join("\n"))' > keep.txt
+          cat keep.txt
+          gh release view "$TAG" -R "$GITHUB_REPOSITORY" --json assets --jq '.assets[].name' | while read -r n; do
+            keep=0
+            while read -r p; do case "$n" in "$p"*) keep=1 ;; esac; done < keep.txt
+            if [ "$keep" = 0 ]; then echo "Quitando $n"; gh release delete-asset "$TAG" "$n" -R "$GITHUB_REPOSITORY" -y; fi
+          done
