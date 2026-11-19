@@ -1,6 +1,6 @@
 # SampledHead Apps nativas (Windows · Mac · Android) — Hoja de proyecto
 
-**Versión actual:** 1.4.0 (19-11-2026) · etiqueta de descargas `apps-v1.1.2` (versión de los paquetes 1.1.2)
+**Versión actual:** 1.5.0 (19-11-2026) · etiqueta de descargas `apps-v1.2.0` (versión de los paquetes 1.2.0)
 **Descargas:** https://github.com/sampledhead-dot/SH-apps/releases/latest
 
 ## Descripción
@@ -113,7 +113,29 @@ Las apps de Windows, Mac y Android **se actualizan solas** cuando cambia la web 
 - Probar antes de entregar: autoprueba de todas las apps de la lista (`node scripts/selftest.js build/<id>`) y empaquetado de al menos una.
 - Informe de error .txt automático y opción manual en el menú Ayuda.
 
+## Carpeta compartida y motor local de IA (1.5.0, paquetes 1.2.0)
+Todas las apps de Windows y Mac comparten **Documentos/SampledHead/** (`app/shared.js`, expuesto a la página por
+`app/preload.js` como `window.shDesktop`; la página lo usa a través de `sh-core.js`):
+- `Bandeja/<app>/` — lo que una app manda a otra con «Enviar a…» (`<id>.json` + `<id>.wav`; el .json aparece de golpe con
+  un renombrado, nunca a medias). La app de destino lo ve al instante (vigilancia de la carpeta) y lo borra al recogerlo.
+- `Modelos/` — modelos de IA descargados una sola vez para todas las apps (htdemucs, RoFormer, Whisper, MuScriptor, SAM Audio…).
+- `Motor/` — motor local de IA: `uv` + Python 3.11 + PyTorch (CUDA si hay NVIDIA en Windows; Metal en Mac Apple) y las partes
+  `separar` (audio-separator: BS-RoFormer, Mel-RoFormer, htdemucs_ft/6s), `letra` (faster-whisper large-v3), `notas`
+  (MuScriptor) y `sam` (SAM Audio; instala Git portátil en Windows si falta). Servidor `engine/server.py` en 127.0.0.1
+  (puerto libre), un trabajo pesado cada vez, progreso por sondeo. Se instala desde la pestaña Extractor.
+- `apps.json` — dónde está instalada cada app (cada una se registra al abrirse) para que «Enviar a…» pueda abrir la otra.
+- MuScriptor y SAM Audio piden una cuenta gratuita de Hugging Face y aceptar su licencia: el token se guarda en
+  `Motor/ajustes.json` (campo en la pestaña Extractor).
+- Menú Ayuda → «Abrir la carpeta compartida». El informe de error incluye la carpeta y el estado del motor.
+- Autoprueba: además de lo anterior, comprueba `shDesktop`, `sh-core` y una ida y vuelta por la bandeja; con
+  `SH_TEST_ENGINE=1` y el motor instalado, separa 3 s de audio de prueba. Variables: `SH_SHARED_DIR` (otra carpeta compartida).
+- Probado (19-11-2026, Linux + Xvfb): autoprueba OK, bandeja OK, motor local por CPU (htdemucs_ft: 3 s en 53 s; BS-RoFormer
+  voz OK). **No probado:** Windows y Mac reales, GPU (CUDA/Metal), instalación del motor con uv en Windows/Mac,
+  MuScriptor y SAM Audio con modelos reales (necesitan token), MinGit.
+- Android: cada APK tiene su propio almacenamiento, así que la bandeja entre apps no cruza de una app a otra (sí en la web).
+
 ## Historial de versiones
+- **1.5.0** (19-11-2026): paquetes 1.2.0. Carpeta compartida Documentos/SampledHead (bandeja entre apps, modelos y motor local de IA), `preload.js` con `window.shDesktop`, abrir una app desde otra, autoprueba ampliada.
 - **1.4.0** (19-11-2026): paquetes 1.1.2. Android: la app ya no queda tapada por la barra de estado (Android 15+) y el
   botón «Descargar» del aviso de programa nuevo descarga el APK directamente (antes, en Pop!Pads, abría la página de
   GitHub por no coincidir el nombre). Copia del APK con el nombre visible en la release y `release.sh` la conserva.

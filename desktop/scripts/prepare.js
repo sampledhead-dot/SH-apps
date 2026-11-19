@@ -31,6 +31,9 @@ const buildId = LIST.wrapperVersion + '+' + commit;
 const webUrl = 'https://sampledhead-dot.github.io/' + A.repo + '/';
 fs.copyFileSync(path.join(ROOT, 'app', 'main.js'), path.join(out, 'main.js'));
 fs.copyFileSync(path.join(ROOT, 'app', 'updater.js'), path.join(out, 'updater.js'));
+for (const f of ['shared.js', 'preload.js']) fs.copyFileSync(path.join(ROOT, 'app', f), path.join(out, f));
+fs.mkdirSync(path.join(out, 'engine'), { recursive: true });
+for (const f of fs.readdirSync(path.join(ROOT, 'app', 'engine'))) fs.copyFileSync(path.join(ROOT, 'app', 'engine', f), path.join(out, 'engine', f));
 fs.copyFileSync(path.join(ROOT, 'icons', id + '.png'), path.join(out, 'icon.png'));
 fs.writeFileSync(path.join(out, 'config.json'), JSON.stringify({
   id, name: A.name, productName: A.productName, wrapperVersion: LIST.wrapperVersion, buildId, webUrl, color: A.color,
@@ -44,7 +47,8 @@ fs.writeFileSync(path.join(out, 'package.json'), JSON.stringify({
   build: {
     appId: 'com.sampledhead.' + id, publish: null, productName: A.productName, electronVersion: LIST.electronVersion,
     directories: { output: 'dist', buildResources: '.' },
-    files: ['main.js', 'updater.js', 'config.json', 'icon.png', 'web/**/*'],
+    files: ['main.js', 'updater.js', 'shared.js', 'preload.js', 'engine/**/*', 'config.json', 'icon.png', 'web/**/*'],
+    asarUnpack: ['engine/**/*'],
     asar: true,
     mac: {
       target: [{ target: 'dmg', arch: ['universal'] }], category: 'public.app-category.music', icon: 'icon.png',

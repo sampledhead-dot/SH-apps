@@ -12,6 +12,7 @@ const os = require('os');
 const CFG = require('./config.json');            // { id, name, productName, wrapperVersion, buildId, webUrl, color, repo, exclude, contentSha }
 const WEB = path.join(__dirname, 'web');
 const { createUpdater, newer } = require('./updater');
+const SHARED = require('./shared');   // carpeta compartida Documentos/SampledHead, bandeja, modelos y motor local
 let UPD = null;   // actualización del contenido (se crea al arrancar)
 const SCHEME = 'shapp';
 const START_URL = SCHEME + '://app/index.html';
@@ -52,6 +53,7 @@ function buildReport(where, err) {
     'Contenido: ' + (UPD ? JSON.stringify(Object.assign({ usando: UPD.sha().slice(0, 7), descargada: UPD.usingDownloaded() }, UPD.state())) : '(sin iniciar)'),
     'Archivo: (los archivos de audio se gestionan dentro de la app; aquí no se registran)',
     'Resultado parcial: ' + (lastPartial || '(ninguno)'),
+    'Carpeta compartida: ' + (SHARED.paths().ROOT || '?') + ' · Motor local: ' + JSON.stringify(SHARED.engineStatus ? (()=>{try{return SHARED.engineStatus()}catch(e){return e.message}})() : '?'),
     '',
     '--- Cronología ---', ...STEPS,
     '',
@@ -167,6 +169,7 @@ function buildMenu() {
       { label: 'Volver a la versión incluida en el programa', click: () => resetContent() },
       { type: 'separator' },
       { label: 'Guardar informe (.txt)', click: () => saveReport('informe manual (menú Ayuda)', null, true) },
+      { label: 'Abrir la carpeta compartida (Documentos/SampledHead)', click: () => shell.openPath(SHARED.paths().ROOT) },
       { label: 'Abrir la versión web', click: () => shell.openExternal(CFG.webUrl) },
       { label: 'Todas las apps de Sampled Head', click: () => shell.openExternal('https://sampledhead-dot.github.io/SH-apps/') },
       { type: 'separator' },
@@ -210,7 +213,7 @@ async function createWindow() {
     width: 1280, height: 880, minWidth: 360, minHeight: 480, show: false,
     title: CFG.name, backgroundColor: CFG.color || '#111111',
     icon: path.join(__dirname, 'icon.png'),
-    webPreferences: { contextIsolation: true, sandbox: true, spellcheck: false, backgroundThrottling: false }
+    webPreferences: { contextIsolation: true, sandbox: true, spellcheck: false, backgroundThrottling: false, preload: path.join(__dirname, 'preload.js') }
   });
   const wc = win.webContents;
   win.once('ready-to-show', () => win.show());
@@ -339,6 +342,22 @@ async function runSelfTest(wc) {
       try { const m = document.querySelector('link[rel=manifest]'); r.manifest = m ? (await fetch(m.href)).status : 'sin manifest'; } catch (e) { r.manifest = 'error: ' + e.message; }
       try { const w = new Worker(URL.createObjectURL(new Blob(['postMessage(2+2)'], { type: 'text/javascript' }))); r.worker = await new Promise(res => { w.onmessage = e => res(e.data); setTimeout(() => res('timeout'), 3000); }); } catch (e) { r.worker = 'error: ' + e.message; }
       try { r.wasm = WebAssembly.validate(new Uint8Array([0,97,115,109,1,0,0,0])); } catch (e) { r.wasm = 'error: ' + e.message; }
+      try {   // carpeta compartida y sh-core (Documentos/SampledHead)
+        r.shDesktop = !!window.shDesktop; r.shCore = !!(window.SH && SH.isDesktop);
+        if (window.shDesktop) {
+          r.info = await shDesktop.info();
+          await shDesktop.bridge.put('selftest', [{ id: 'x1', name: 'prueba', kind: 'pad', wav: new Uint8Array([82,73,70,70]).buffer, ts: Date.now() }]);
+          const l = await shDesktop.bridge.list('selftest'); r.bridge = l.length === 1 && l[0].wav && l[0].wav.byteLength === 4;
+          await shDesktop.bridge.remove('selftest', null); r.bridgeEmpty = (await shDesktop.bridge.list('selftest')).length === 0;
+          r.engine = await shDesktop.engine.status();
+          if (r.engine.installed && ${JSON.stringify(!!process.env.SH_TEST_ENGINE)}) {   // prueba del motor local (solo si se pide)
+            const sr = 44100, n = sr * 3, b = new Float32Array(n); for (let i = 0; i < n; i++) b[i] = 0.3 * Math.sin(2 * Math.PI * 55 * i / sr) + (i % 22050 < 900 ? 0.5 * Math.sin(i / 3) : 0);
+            const wav = SH.wav.encode({ channels: [b, b], sampleRate: sr }, 16), t0 = Date.now();
+            const res = await shDesktop.engine.run('separate', { wav }, { stems: ['bajo', 'bateria'] });
+            r.engineRun = { ms: Date.now() - t0, files: res.files.map(f => f.stem + ':' + (f.wav ? f.wav.byteLength : 0)), device: res.device };
+          }
+        }
+      } catch (e) { r.shDesktop = 'error: ' + e.message; }
       try { const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob(['hola'], { type: 'text/plain' })); a.download = 'prueba-descarga.txt'; document.body.appendChild(a); a.click(); a.remove(); r.downloadClick = true; } catch (e) { r.downloadClick = 'error: ' + e.message; }
       return r;
     })()`);
@@ -361,6 +380,7 @@ app.whenReady().then(() => {
   UPD = createUpdater({ repo: CFG.repo, exclude: CFG.exclude || [], bundledDir: WEB, bundledSha: CFG.contentSha || '',
     dataDir: app.getPath('userData'), fetch: (u, opt) => net.fetch(u, opt), log });
   protocol.handle(SCHEME, serve);
+  try { SHARED.setup({ cfg: CFG, log, step }); step('Carpeta compartida: ' + SHARED.paths().ROOT); } catch (e) { onFail('carpeta compartida', e); }
   return createWindow();
 }).catch(e => onFail('arranque', e));
 app.on('window-all-closed', () => app.quit());
