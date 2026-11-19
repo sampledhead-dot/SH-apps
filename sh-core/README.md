@@ -36,7 +36,8 @@ Para enviar se puede pasar `audio: AudioBuffer` en lugar de `wav` y sh-core lo c
 | spb | Sample Pack Builder | stem, loop |
 | tuner | SampledHead Tuner | stem, loop, notas |
 | tonopad | TonoPad | stem, loop, pad, notas |
-| poppads | Pop!Pads | pad, frase, kit |
 
 Las claves antiguas (`toEditor`, `toSampler`, `toCrazyHead`, `fromCrazyHead`) se siguen leyendo en las apps
 que ya las usaban, para no romper nada.
+
+Pop!Pads es independiente (pensada para niños): no lleva sh-core ni aparece en «Enviar a…».
