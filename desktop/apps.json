@@ -1,5 +1,5 @@
 {
-  "wrapperVersion": "1.1.1",
+  "wrapperVersion": "1.1.2",
   "electronVersion": "45.3.4",
   "apps": [
     {"id": "sampler", "name": "SampledHead App", "productName": "SampledHead App", "repo": "sampledhead-app", "color": "#d65f00", "exclude": []},

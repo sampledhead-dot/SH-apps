@@ -245,6 +245,10 @@ jobs:
           ART=$(node -e 'const l=require(process.env.GITHUB_WORKSPACE+"/desktop/apps.json");const a=l.apps.find(x=>x.id===process.argv[1]);console.log(a.productName.replace(/[^A-Za-z0-9]+/g,"-")+"-"+(l.androidVersion||l.wrapperVersion))' "${{ matrix.app.id }}")
           mkdir -p "$GITHUB_WORKSPACE/out-android"
           cp app/build/outputs/apk/release/app-release.apk "$GITHUB_WORKSPACE/out-android/$ART-Android.apk"
+          # Copia con el nombre visible (p. ej. «Pop-Pads-…» para «Pop!Pads»): los APK v1.1.1 y anteriores lo buscan así
+          # y, si no lo encuentran, abren la página de GitHub en vez de descargarlo.
+          OLD=$(node -e 'const l=require(process.env.GITHUB_WORKSPACE+"/desktop/apps.json");const a=l.apps.find(x=>x.id===process.argv[1]);console.log(a.name.replace(/[^A-Za-z0-9]+/g,"-")+"-"+(l.androidVersion||l.wrapperVersion))' "${{ matrix.app.id }}")
+          if [ "$OLD" != "$ART" ]; then cp app/build/outputs/apk/release/app-release.apk "$GITHUB_WORKSPACE/out-android/$OLD-Android.apk"; fi
           ls -la "$GITHUB_WORKSPACE/out-android"
       - uses: actions/upload-artifact@v4
         if: steps.src.outputs.ok == 'true'

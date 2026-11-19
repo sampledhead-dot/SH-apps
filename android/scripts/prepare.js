@@ -31,6 +31,7 @@ fs.writeFileSync(path.join(out, 'app', 'app.properties'), [
   'applicationId=com.sampledhead.' + id,
   'appId=' + id,
   'appName=' + esc(A.name),
+  'productName=' + esc(A.productName || A.name),
   'versionName=' + ver,
   'versionCode=' + versionCode,
   'webUrl=https://sampledhead-dot.github.io/' + A.repo + '/',

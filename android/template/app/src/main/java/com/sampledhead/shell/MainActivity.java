@@ -23,6 +23,9 @@ import android.provider.MediaStore;
 import android.util.Base64;
 import android.util.Log;
 import android.view.View;
+import android.view.ViewGroup;
+import android.view.WindowInsets;
+import android.widget.FrameLayout;
 import android.webkit.ConsoleMessage;
 import android.webkit.JavascriptInterface;
 import android.webkit.PermissionRequest;
@@ -157,6 +160,8 @@ public class MainActivity extends Activity {
         @JavascriptInterface public void error(String msg) { log("error", "descarga JS: " + msg); toast("No se pudo guardar el archivo"); }
         @JavascriptInterface public String platform() { return "android"; }
         @JavascriptInterface public void report() { saveReport("informe manual", null, null, true); }
+        /** La web lo usa para saber que el programa ya deja el hueco de las barras del sistema (v1.1.2+). */
+        @JavascriptInterface public int insets() { return 1; }
     }
     static String safeName(String n) { n = n == null || n.trim().isEmpty() ? "archivo" : n.trim(); return n.replaceAll("[\\\\/:*?\"<>|]", "_"); }
     void toast(String s) { ui.post(() -> Toast.makeText(this, s, Toast.LENGTH_LONG).show()); }
@@ -187,7 +192,21 @@ public class MainActivity extends Activity {
 
         web = new WebView(this);
         web.setBackgroundColor(getColor(R.color.app_bg));
-        setContentView(web);
+        // Desde Android 15 (targetSdk 35) la app se dibuja SIEMPRE bajo la barra de estado y la de navegación.
+        // Se deja ese hueco con el color de la app para que nada quede tapado por la hora, la batería o los botones.
+        FrameLayout root = new FrameLayout(this);
+        root.setBackgroundColor(getColor(R.color.app_bg));
+        root.addView(web, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+        root.setOnApplyWindowInsetsListener((v, in) -> {
+            if (Build.VERSION.SDK_INT >= 30) {
+                android.graphics.Insets b = in.getInsets(WindowInsets.Type.systemBars() | WindowInsets.Type.displayCutout() | WindowInsets.Type.ime());
+                v.setPadding(b.left, b.top, b.right, b.bottom);
+                return WindowInsets.CONSUMED;
+            }
+            v.setPadding(in.getSystemWindowInsetLeft(), in.getSystemWindowInsetTop(), in.getSystemWindowInsetRight(), in.getSystemWindowInsetBottom());
+            return in.consumeSystemWindowInsets();
+        });
+        setContentView(root);
         WebSettings s = web.getSettings();
         s.setJavaScriptEnabled(true);
         s.setDomStorageEnabled(true);
@@ -339,14 +358,20 @@ public class MainActivity extends Activity {
             if (!Updater.newer(versionName(), v)) return;
             android.content.SharedPreferences sp = getSharedPreferences("actualizaciones", MODE_PRIVATE);
             if (v.equals(sp.getString("avisado", ""))) return;
-            String url = String.valueOf(rel.get("html_url")), want = getString(R.string.app_name).replaceAll("[^A-Za-z0-9]+", "-") + "-" + v + "-Android.apk";
+            // El APK publicado se llama <productName>-<versión>-Android.apk (p. ej. «PopPads-…», aunque la app se llame «Pop!Pads»).
+            // Antes se buscaba por el nombre visible y, si no coincidía, se abría la página de GitHub en vez de descargar.
+            String url = String.valueOf(rel.get("html_url")), apk = null;
+            String[] wants = { getString(R.string.product_name).replaceAll("[^A-Za-z0-9]+", "-") + "-" + v + "-Android.apk",
+                               getString(R.string.app_name).replaceAll("[^A-Za-z0-9]+", "-") + "-" + v + "-Android.apk" };
             Object assets = rel.get("assets");
-            if (assets instanceof java.util.List) for (Object o : (java.util.List<?>) assets) { @SuppressWarnings("unchecked") Map<String, Object> a = (Map<String, Object>) o; if (want.equals(a.get("name"))) url = String.valueOf(a.get("browser_download_url")); }
+            if (assets instanceof java.util.List) for (String want : wants) { if (apk != null) break;
+                for (Object o : (java.util.List<?>) assets) { @SuppressWarnings("unchecked") Map<String, Object> a = (Map<String, Object>) o; if (want.equalsIgnoreCase(String.valueOf(a.get("name")))) { apk = String.valueOf(a.get("browser_download_url")); break; } } }
+            if (apk != null) url = apk; else log("aviso", "no se encontró el APK de esta app en la release: se abre la página");
             final String go = url;
             ui.post(() -> { if (isFinishing()) return; sp.edit().putString("avisado", v).apply();
                 new AlertDialog.Builder(this).setTitle("Versión nueva del programa (v" + v + ")")
                     .setMessage("Tienes la v" + versionName() + ". La app se actualiza sola, pero esta mejora es del propio programa: descarga el APK e instálalo encima (tus datos se conservan).")
-                    .setPositiveButton("Descargar", (dl, w) -> { try { startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(go))); } catch (Exception e) { toast("No se pudo abrir el navegador"); } })
+                    .setPositiveButton("Descargar", (dl, w) -> { try { startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(go))); if (go.endsWith(".apk")) toast("Descargando el APK… ábrelo desde la notificación para instalarlo"); } catch (Exception e) { toast("No se pudo abrir el navegador"); } })
                     .setNegativeButton("Ahora no", null).show(); });
         } catch (Exception e) { log("aviso", "comprobación del programa: " + e.getMessage()); }
     }

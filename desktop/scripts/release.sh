@@ -41,7 +41,8 @@ for old in $(gh release list -R "$REPO" --limit 50 --json tagName --jq '.[].tagN
 done
 
 # Retirar descargas de apps que ya no están en la lista
-node -e 'const l = require("./repo/desktop/apps.json"); console.log(l.apps.map(a => a.productName.replace(/[^A-Za-z0-9]+/g, "-") + "-").join("\n"))' > keep.txt
+# (también el nombre visible, p. ej. «Pop-Pads-…»: es la copia que buscan los APK v1.1.1 y anteriores)
+node -e 'const l = require("./repo/desktop/apps.json"); console.log([...new Set(l.apps.flatMap(a => [a.productName, a.name]).map(n => n.replace(/[^A-Za-z0-9]+/g, "-") + "-"))].join("\n"))' > keep.txt
 gh release view "$TAG" -R "$REPO" --json assets --jq '.assets[].name' | while read -r n; do
   keep=0
   while read -r p; do case "$n" in "$p"[0-9]*) keep=1 ;; esac; done < keep.txt

@@ -1,6 +1,6 @@
 # SampledHead Apps nativas (Windows · Mac · Android) — Hoja de proyecto
 
-**Versión actual:** 1.3.0 (19-11-2026) · etiqueta de descargas `apps-v1.1.1` (versión de los paquetes 1.1.1)
+**Versión actual:** 1.4.0 (19-11-2026) · etiqueta de descargas `apps-v1.1.2` (versión de los paquetes 1.1.2)
 **Descargas:** https://github.com/sampledhead-dot/SH-apps/releases/latest
 
 ## Descripción
@@ -48,6 +48,14 @@ usa el micrófono o la interfaz de audio, MIDI y descargas (WAV, ZIP…) igual q
   `android/keystore/provisional.jks` (contraseña pública `sampledhead-provisional`). **Importante**: Android solo actualiza
   una app si la nueva está firmada con la misma clave; cambiar de la provisional a la permanente obliga a desinstalar una vez.
 - `versionCode` = 1.000.000 + número de ejecución (siempre sube, para que se pueda actualizar encima).
+- **Barras del sistema** (paquetes 1.1.2): con targetSdk 35, Android 15+ dibuja la app bajo la barra de estado y la de
+  navegación e ignora `statusBarColor`. El WebView va dentro de un `FrameLayout` que recibe los *insets*
+  (barras del sistema, recorte de cámara y teclado) como relleno, con el color de la app. La web puede preguntar
+  `SHAndroid.insets()` (devuelve 1) para saber que el programa ya deja ese hueco.
+- **APK nuevo del programa**: se busca en la release por `<productName>-<versión>-Android.apk` (y, si no, por el nombre
+  visible). Hasta la 1.1.1 se buscaba solo por el nombre visible y en Pop!Pads («Pop-Pads-…» frente a «PopPads-…») se
+  abría la página de GitHub en vez de descargar. El workflow publica además una copia con el nombre visible cuando no
+  coincide, para que los APK ya instalados también descarguen directamente.
 
 ## Mac sin máquinas Mac
 Las máquinas Mac con chip Apple de GitHub (`macos-15`, arm64) no llegaban a asignarse: los trabajos se cancelaban tras 15-30 min y llegaban correos de error. La anotación de GitHub en cada trabajo lo explica: «The job was not acquired by Runner of type hosted even after multiple attempts · Due to capacity constraints, jobs targeting macOS arm64 runners may experience longer queue times». Es decir, era falta de capacidad de GitHub y no un problema de la cuenta.
@@ -106,6 +114,9 @@ Las apps de Windows, Mac y Android **se actualizan solas** cuando cambia la web 
 - Informe de error .txt automático y opción manual en el menú Ayuda.
 
 ## Historial de versiones
+- **1.4.0** (19-11-2026): paquetes 1.1.2. Android: la app ya no queda tapada por la barra de estado (Android 15+) y el
+  botón «Descargar» del aviso de programa nuevo descarga el APK directamente (antes, en Pop!Pads, abría la página de
+  GitHub por no coincidir el nombre). Copia del APK con el nombre visible en la release y `release.sh` la conserva.
 - **1.3.0** (19-11-2026): **iconos adaptativos en Android** (paquetes 1.1.1). Antes Android metía el icono en una placa blanca porque solo había un PNG. `android/scripts/make-icons.py` genera, desde `desktop/icons/<id>.png`, una capa de fondo (color liso del propio icono), el dibujo con un ajuste por tipo de icono (a sangre, redondeado, con marco, círculo) y la capa monocroma para los iconos temáticos de Android 13+. Comprobado con vista previa en círculo, squircle, cuadrado redondeado y gota, y con `aapt` en el APK. Si cambia un icono: `python3 android/scripts/make-icons.py --preview /tmp/iconos.png` y revisar la vista previa.
 - **1.2.0** (18-11-2026): **actualizaciones automáticas** del contenido y aviso de programa nuevo (paquetes 1.1.0, release `apps-v1.1.0`; la anterior se retira).
   Probado con un servidor que imita a GitHub y el historial real de Pop!Pads (v1.13 incluida → v1.14 descargada): solo baja los 3 archivos cambiados (232 KB, 2 consultas). Probado con Electron real: dos arranques y vuelta atrás con una versión estropeada. El APK compila y se firma; **no se ha probado en un móvil**.
@@ -129,6 +140,7 @@ Las apps de Windows, Mac y Android **se actualizan solas** cuando cambia la web 
   o `xattr -cr`. No se ha podido abrir en un Mac real.
 - **Android**: probado el empaquetado, la firma y el código de descargas (en Chrome con el puente simulado); no se ha
   podido arrancar en un emulador (este entorno no tiene KVM) ni en un móvil real. Web MIDI no existe en Android WebView.
+  El relleno de las barras del sistema (1.1.2) se ha compilado en GitHub Actions pero no se ha visto en un móvil real.
 - Sin actualizaciones automáticas dentro del programa: las versiones nuevas se descargan de Releases.
 - Iconos: copiados en `icons/`; si una app cambia de icono hay que regenerar el suyo.
 - No es un plugin VST: las versiones VST/AU están pendientes (siguiente paso: Tuner).
