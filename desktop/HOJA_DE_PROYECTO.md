@@ -1,6 +1,6 @@
 # SampledHead Apps nativas (Windows · Mac · Android) — Hoja de proyecto
 
-**Versión actual:** 1.6.0 (19-11-2026) · etiqueta de descargas `apps-v1.3.5` (paquetes 1.3.5) · plataforma SampledHead 1.0.3
+**Versión actual:** 1.6.0 (19-11-2026) · etiqueta de descargas `apps-v1.3.6` (paquetes 1.3.6) · plataforma SampledHead 1.0.4
 **Descargas:** https://github.com/sampledhead-dot/SH-apps/releases/latest
 
 ## Descripción
@@ -33,6 +33,10 @@ usa el micrófono o la interfaz de audio, MIDI y descargas (WAV, ZIP…) igual q
   propio (todo va en `WebContentsView`). Ahora `reveal()` la muestra al cargar el inicio y a los 2,5 s como respaldo, la
   centra si quedó fuera de la pantalla, y `activate` (clic en el Dock / abrirla otra vez) la vuelve a mostrar. Las apps
   sueltas: respaldo de 4 s y `activate`.
+- **Plataforma 1.0.4 / paquetes 1.3.6 — traer datos SIN sobrescribir** (decisión del usuario: nunca sobrescribir).
+  «Traer mis datos» guarda cada .shdatos como `pendientes/<app>--<fecha>.shdatos` (antes `<app>.shdatos`: una segunda
+  copia de la misma app pisaba a la primera) y la app las suma todas al abrirse (sh-core 1.2.0). La importación de las
+  apps sueltas ya no borra: solo copia una carpeta si la plataforma aún no tiene datos de esa app.
 ## Qué versión tiene cada app (decisión del 18-11-2026)
 | App | Web | Windows / Mac / Android | Plugin VST3/AU |
 |---|---|---|---|

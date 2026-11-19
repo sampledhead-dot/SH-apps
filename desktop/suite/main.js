@@ -225,7 +225,8 @@ function importPending() {
     const a = appCfg(id); if (!a) continue;
     const src = legacyDir(a), dst = path.join(app.getPath('userData'), 'Partitions', id);
     for (const sub of ['Local Storage', 'IndexedDB', 'databases', 'File System']) {
-      if (fs.existsSync(path.join(src, sub))) { fs.rmSync(path.join(dst, sub), { recursive: true, force: true }); copyDir(path.join(src, sub), path.join(dst, sub)); }
+      // no se sobrescribe nunca: si la app de la plataforma ya tiene datos, se deja como está (para sumar, usar una copia .shdatos)
+      if (fs.existsSync(path.join(src, sub)) && !fs.existsSync(path.join(dst, sub))) copyDir(path.join(src, sub), path.join(dst, sub));
     }
     done.push(id);
   }
@@ -244,7 +245,7 @@ function importFiles(files) {
   return (files || []).map(f => {
     try {
       const id = shdatosApp(f.data); if (!appCfg(id)) return { name: f.name, ok: false, error: 'Es de una app que no está en SampledHead (' + id + ')' };
-      fs.writeFileSync(path.join(PEND(), id + '.shdatos'), Buffer.from(f.data));
+      fs.writeFileSync(path.join(PEND(), id + '--' + Date.now() + '-' + Math.random().toString(36).slice(2, 6) + '.shdatos'), Buffer.from(f.data));   // varias copias por app (web, móvil…): se suman todas
       if (PREF.apps && !PREF.apps.includes(id)) { PREF.apps.push(id); savePref(); }
       if (VIEWS[id]) VIEWS[id].webContents.reload();      // se aplica al recargar
       step('Copia web preparada para ' + id);
@@ -253,7 +254,8 @@ function importFiles(files) {
   });
 }
 function pendingBackup(id) {
-  const f = path.join(PEND(), id + '.shdatos'); if (!fs.existsSync(f)) return null;
+  let list = []; try { list = fs.readdirSync(PEND()).filter(n => n === id + '.shdatos' || n.startsWith(id + '--')).sort(); } catch (e) {}
+  if (!list.length) return null; const f = path.join(PEND(), list[0]);
   const b = fs.readFileSync(f); try { fs.unlinkSync(f); } catch (e) {}
   step('Aplicando la copia web en ' + id);
   return b.buffer.slice(b.byteOffset, b.byteOffset + b.byteLength);

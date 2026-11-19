@@ -47,3 +47,14 @@ Cada app exporta solo lo suyo a un archivo `.shdatos` («SHDAT1» + JSON + binar
 IndexedDB (tabla `OWN`). `SH.backup.sheet(me)` = hoja «Guardar copia / Recuperar copia»; está en el botón «⇄ Apps» de cada
 app (Chuleta Beat: «💾 Datos»; SampledHead App: menú Más). En la plataforma de escritorio, la copia que deja
 «Traer mis datos» se aplica sola al abrir la app.
+
+## Copias de datos (.shdatos) — sh-core 1.2.0 (19-11-2026)
+«Añadir una copia» **suma**, no sustituye (decisión del usuario: no sobrescribir nunca). `SH.backup.restore(me, ab)`:
+- lo que no existe se añade; lo idéntico se salta; si hay algo con la misma clave pero distinto se guarda como
+  «Nombre (copia)» (y «(copia 2)»…); importar dos veces la misma copia no duplica nada;
+- en almacenes con `keyPath` (p. ej. proyectos de TonoPad con `id`) el id nuevo arrastra lo que cuelga de él en los otros
+  almacenes (audio `id` y `id#s`);
+- estado de trabajo (`OWN[app].state`: autoguardado y huecos del generador del sampler, loops cargados de CrazyHead) y
+  ajustes sueltos: manda el dispositivo donde se importa;
+- en localStorage, las listas y colecciones de objetos (escenas, presets propios, afinaciones…) se suman;
+- `{ replace: true }` hace lo de antes (sustituir); no se usa en la interfaz.
