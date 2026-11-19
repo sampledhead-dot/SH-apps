@@ -135,7 +135,7 @@
       ]
     }
   ],
-  "suiteVersion": "1.0.1",
+  "suiteVersion": "1.0.2",
   "plugins": [
     {
       "id": "fuzzhead-vst",
@@ -144,6 +144,14 @@
       "app": "fuzzhead",
       "bundle": "FuzzHead",
       "desc": "El sinte para guitarra y bajo en tiempo real dentro de tu DAW."
+    },
+    {
+      "id": "tapehead-vst",
+      "name": "TapeHead (VST3/AU)",
+      "repo": "TapeHead",
+      "app": "tapehead",
+      "bundle": "TapeHead",
+      "desc": "Previo de multipista de casete: de grosor cálido a fuzz aplastado, con presets de punk, grunge, post-punk, indie y noise."
     },
     {
       "id": "tuner-vst",

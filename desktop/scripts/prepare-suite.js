@@ -32,6 +32,8 @@ for (const A of LIST.apps) {
   apps.push({ id: A.id, name: A.name, productName: A.productName, color: A.color, repo: A.repo, exclude: A.exclude || [], contentSha: sha, desc: A.desc || '',
     webUrl: 'https://sampledhead-dot.github.io/' + A.repo + '/' });
 }
+// iconos de los plugins sin app propia (p. ej. TapeHead)
+for (const P of LIST.plugins || []) { const ic = path.join(ROOT, 'icons', P.app + '.png'), dst = path.join(out, 'home', 'icons', P.app + '.png'); if (fs.existsSync(ic) && !fs.existsSync(dst)) fs.copyFileSync(ic, dst); }
 const version = LIST.suiteVersion || '1.0.0';
 let self = ''; try { self = cp.execSync('git -C "' + ROOT + '" rev-parse --short HEAD', { stdio: ['ignore', 'pipe', 'ignore'] }).toString().trim(); } catch (e) {}
 for (const f of ['main.js', 'home-preload.js']) fs.copyFileSync(path.join(ROOT, 'suite', f), path.join(out, f));
