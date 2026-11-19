@@ -29,6 +29,7 @@ contextBridge.exposeInMainWorld('shDesktop', {
     get: (url, name, cb) => withProg(id => ipcRenderer.invoke('sh:models:get', url, name, id), cb),
     has: (url, name) => ipcRenderer.invoke('sh:models:has', url, name)
   },
+  backup: { pending: () => ipcRenderer.invoke('sh:backup:pending') },
   engine: {
     status: () => ipcRenderer.invoke('sh:engine:status'),
     install: (parts, cb) => withProg(id => ipcRenderer.invoke('sh:engine:install', parts, id), cb),

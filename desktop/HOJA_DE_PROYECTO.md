@@ -1,6 +1,6 @@
 # SampledHead Apps nativas (Windows · Mac · Android) — Hoja de proyecto
 
-**Versión actual:** 1.6.0 (19-11-2026) · etiqueta de descargas `apps-v1.3.0` (paquetes 1.3.0) · plataforma SampledHead 1.0.0
+**Versión actual:** 1.6.0 (19-11-2026) · etiqueta de descargas `apps-v1.3.0` (paquetes 1.3.1) · plataforma SampledHead 1.0.1
 **Descargas:** https://github.com/sampledhead-dot/SH-apps/releases/latest
 
 ## Descripción
@@ -151,6 +151,9 @@ Todas las apps de Windows/Mac en un solo programa (`desktop/suite/`). Las apps s
   `apps.json` de la carpeta compartida apunta las apps al programa con `--app=<id>` (las apps sueltas también la abren).
 - **Importar de las apps sueltas:** copia `Local Storage`, `IndexedDB`, `databases` y `File System` de
   `appData/<productName>` a `userData/Partitions/<id>` al arrancar (antes de abrir ninguna app) y reinicia.
+- **Traer datos de las versiones web (1.0.1):** cada app web guarda una copia `.shdatos` (sh-core `SH.backup`: solo sus
+  claves de localStorage y sus bases IndexedDB). «Traer mis datos» → «Elegir archivos .shdatos» las deja en
+  `userData/pendientes/<app>.shdatos`; al abrir la app, sh-core la pide (`shDesktop.backup.pending`), la aplica y recarga.
 - **Plugins VST3/AU** (`apps.json → plugins`: FuzzHead y SampledHead Tuner): descarga el último `vst-v*` de su repo.
   Windows: `C:\Program Files\Common Files\VST3` (pide permiso de administrador una vez; si se rechaza, carpeta del usuario
   `%LOCALAPPDATA%\Programs\Common\VST3`). Mac: `~/Library/Audio/Plug-Ins/VST3` y `Components`, sin cuarentena.
@@ -164,6 +167,7 @@ Todas las apps de Windows/Mac en un solo programa (`desktop/suite/`). Las apps s
   importación con datos reales de las apps sueltas.
 
 ## Historial de versiones
+- **1.6.1** (19-11-2026): plataforma 1.0.1 y paquetes 1.3.1: «Traer mis datos» acepta copias `.shdatos` de las versiones web.
 - **1.6.0** (19-11-2026): plataforma única SampledHead 1.0.0; Pop!Pads solo web y Android; paquetes 1.3.0 (`shared.js` admite la plataforma y abrir apps con argumentos).
 - **1.5.0** (19-11-2026): paquetes 1.2.0. Carpeta compartida Documentos/SampledHead (bandeja entre apps, modelos y motor local de IA), `preload.js` con `window.shDesktop`, abrir una app desde otra, autoprueba ampliada.
 - **1.4.0** (19-11-2026): paquetes 1.1.2. Android: la app ya no queda tapada por la barra de estado (Android 15+) y el

@@ -306,6 +306,7 @@ function setup(opts) {
   h('sh:engine:run', (wc, reqId, task, input, params) => engineRun(wc, reqId, task, input, params));
   h('sh:engine:token', (wc, tok) => { const f = path.join(MOTOR, 'ajustes.json'), a = readJson(f, {}); a.hfToken = String(tok || '').trim(); fs.writeFileSync(f, JSON.stringify(a)); if (ENG.proc) { ENG.proc.kill(); } return true; });
   h('sh:folder', () => { shell.openPath(ROOT); return ROOT; });
+  h('sh:backup:pending', wc => OPTS.pendingBackup ? OPTS.pendingBackup(OPTS.appOf ? OPTS.appOf(wc) : CFG.id) : null);
   app.on('before-quit', () => { if (ENG.proc) try { ENG.proc.kill(); } catch (e) {} });
 }
 module.exports = { setup, paths: () => ({ ROOT, BANDEJA, MODELOS, MOTOR }), engineStatus, download, run, readJson };

@@ -41,3 +41,9 @@ Las claves antiguas (`toEditor`, `toSampler`, `toCrazyHead`, `fromCrazyHead`) se
 que ya las usaban, para no romper nada.
 
 Pop!Pads es independiente (pensada para niños): no lleva sh-core ni aparece en «Enviar a…».
+
+## Copia de datos (`SH.backup`, desde 1.1.0)
+Cada app exporta solo lo suyo a un archivo `.shdatos` («SHDAT1» + JSON + binarios): sus claves de localStorage y sus bases
+IndexedDB (tabla `OWN`). `SH.backup.sheet(me)` = hoja «Guardar copia / Recuperar copia»; está en el botón «⇄ Apps» de cada
+app (Chuleta Beat: «💾 Datos»; SampledHead App: menú Más). En la plataforma de escritorio, la copia que deja
+«Traer mis datos» se aplica sola al abrir la app.

@@ -233,6 +233,32 @@ function importPending() {
   PREF.imported = true; PREF.importedApps = done; savePref(); step('Importado de las apps sueltas: ' + done.join(', '));
 }
 
+/* Copias .shdatos de las versiones web: se dejan en userData/pendientes/<app>.shdatos y la app las aplica al abrirse (sh-core) */
+const PEND = () => path.join(app.getPath('userData'), 'pendientes');
+function shdatosApp(buf) {
+  const b = Buffer.from(buf); if (b.slice(0, 6).toString('latin1') !== 'SHDAT1') throw new Error('No es una copia .shdatos');
+  const n = b.readUInt32LE(6); return JSON.parse(b.slice(10, 10 + n).toString('utf8')).app;
+}
+function importFiles(files) {
+  fs.mkdirSync(PEND(), { recursive: true });
+  return (files || []).map(f => {
+    try {
+      const id = shdatosApp(f.data); if (!appCfg(id)) return { name: f.name, ok: false, error: 'Es de una app que no está en SampledHead (' + id + ')' };
+      fs.writeFileSync(path.join(PEND(), id + '.shdatos'), Buffer.from(f.data));
+      if (PREF.apps && !PREF.apps.includes(id)) { PREF.apps.push(id); savePref(); }
+      if (VIEWS[id]) VIEWS[id].webContents.reload();      // se aplica al recargar
+      step('Copia web preparada para ' + id);
+      return { name: f.name, ok: true, app: id, appName: appCfg(id).name };
+    } catch (e) { return { name: f.name, ok: false, error: e.message }; }
+  });
+}
+function pendingBackup(id) {
+  const f = path.join(PEND(), id + '.shdatos'); if (!fs.existsSync(f)) return null;
+  const b = fs.readFileSync(f); try { fs.unlinkSync(f); } catch (e) {}
+  step('Aplicando la copia web en ' + id);
+  return b.buffer.slice(b.byteOffset, b.byteOffset + b.byteLength);
+}
+
 /* ---------------- plugins VST3 / AU ---------------- */
 function pluginDirs() {
   if (process.platform === 'darwin') return { vst3: path.join(os.homedir(), 'Library', 'Audio', 'Plug-Ins', 'VST3'), au: path.join(os.homedir(), 'Library', 'Audio', 'Plug-Ins', 'Components') };
@@ -295,6 +321,7 @@ function homeIpc() {
   h('home:plugin', async (wc, id) => { const p = CFG.plugins.find(x => x.id === id); if (!p) throw new Error('Plugin desconocido'); return installPlugin(p, q => homeSend('progress', Object.assign({ id }, q))); });
   h('home:import', (wc, ids) => { fs.writeFileSync(path.join(app.getPath('userData'), 'importar.json'), JSON.stringify(ids || legacyApps())); if (SELFTEST) { importPending(); return true; } app.relaunch(); app.exit(0); return true; });
   h('home:skipImport', () => { PREF.imported = true; savePref(); return true; });
+  h('home:importFiles', (wc, files) => importFiles(files));
   h('home:folder', () => { shell.openPath(SHARED.paths().ROOT); return true; });
   h('home:pluginFolder', () => { const d = pluginDirs(); shell.openPath(fs.existsSync(d.vst3) ? d.vst3 : (d.vst3User || d.vst3)); return true; });
   h('home:updates', () => checkUpdates(true));
@@ -350,6 +377,7 @@ async function selftest() {
   try {
     await new Promise(r => setTimeout(r, 1500));
     out.home = await home.webContents.executeJavaScript('document.querySelectorAll(".card").length');
+    if (process.env.SH_TEST_SHDATOS) out.importFiles = importFiles([{ name: path.basename(process.env.SH_TEST_SHDATOS), data: fs.readFileSync(process.env.SH_TEST_SHDATOS) }]);
     for (const a of chosen()) {
       show(a.id); await new Promise(r => setTimeout(r, 3500));
       const wc = VIEWS[a.id].webContents;
@@ -363,6 +391,7 @@ async function selftest() {
       out.inbox = await VIEWS.fuzzhead.webContents.executeJavaScript(`SH.bridge.inbox('fuzzhead').then(l=>l.length)`);
       await VIEWS.fuzzhead.webContents.executeJavaScript(`SH.bridge.remove('fuzzhead',null)`);
     }
+    if (process.env.SH_TEST_SHDATOS && VIEWS.fuzzhead) { await new Promise(r => setTimeout(r, 2500)); out.shdatos = await VIEWS.fuzzhead.webContents.executeJavaScript("localStorage.getItem('fuzzhead-test')"); }
     show(null); await new Promise(r => setTimeout(r, 400));
     out.backHome = cur === null && home.getVisible();
     out.state = state();
@@ -390,6 +419,7 @@ app.whenReady().then(() => {
   SHARED.setup({ cfg: { id: 'suite', name: 'SampledHead', productName: 'SampledHead', wrapperVersion: CFG.version }, log, step,
     appOf: wc => (wc && WC2APP.get(wc.id)) || 'suite',
     openApp: id => (appCfg(id) && (!PREF.apps || PREF.apps.includes(id))) ? show(id) : false,
+    pendingBackup,
     register: f => {   // todas las apps de la plataforma se abren con este programa (las apps sueltas también la encuentran)
       if (!app.isPackaged) return; const reg = SHARED.readJson(f, {});
       let exe = process.execPath; if (process.platform === 'darwin') { const m = exe.match(/^(.*?\.app)\//); if (m) exe = m[1]; }

@@ -5,7 +5,7 @@
 const fs = require('fs'), path = require('path');
 const root = path.resolve(process.argv[2] || path.join(__dirname, '..', '..'));
 const src = path.join(__dirname, 'sh-core.js');
-const REPOS = ['sampledhead-app', 'sampledhead-editor', 'CrazyHead', 'FuzzHead', 'spb-head', 'Sampledhead-tuner', 'Tono-Pad'];
+const REPOS = ['sampledhead-app', 'sampledhead-editor', 'CrazyHead', 'FuzzHead', 'spb-head', 'Sampledhead-tuner', 'Tono-Pad', 'Chuleta-beat'];
 const code = fs.readFileSync(src, 'utf8');
 for (const r of REPOS) {
   const dir = path.join(root, r);
