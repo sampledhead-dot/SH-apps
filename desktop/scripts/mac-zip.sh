@@ -4,7 +4,12 @@
 # Uso (desde desktop/):  bash scripts/mac-zip.sh <id>
 set -euo pipefail
 ID="$1"; DIR="build/$ID"
-npx electron-builder --projectDir "$DIR" --mac dir --arm64 --x64 --publish never -c.mac.identity=null
+# Electron 44+ exige macOS 13. Para que funcione en macOS 12 (Monterey) el Mac usa la última Electron 43
+# (`electronVersionMac` en apps.json). Windows y Android siguen con `electronVersion`.
+MACV=$(node -p "require('./apps.json').electronVersionMac||''")
+EXTRA=()
+[ -n "$MACV" ] && EXTRA=(-c.electronVersion="$MACV" -c.mac.minimumSystemVersion=12.0) && echo "Mac con Electron $MACV (macOS 12 o posterior)"
+npx electron-builder --projectDir "$DIR" --mac dir --arm64 --x64 --publish never -c.mac.identity=null "${EXTRA[@]}"
 NAME=$(node -p "require('./$DIR/package.json').build.productName")
 ART=$(node -p "const p=require('./$DIR/package.json'); p.productName.replace(/[^A-Za-z0-9]+/g,'-')+'-'+p.version")
 for pair in "mac-arm64:AppleSilicon" "mac:Intel"; do

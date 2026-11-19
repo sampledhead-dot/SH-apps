@@ -256,7 +256,8 @@ jobs:
         continue-on-error: true
         run: |
           sudo apt-get install -y -qq xvfb >/dev/null || true
-          npx electron-builder --projectDir build/suite --linux dir --publish never >/dev/null
+          MACV=$(node -p "require('./apps.json').electronVersionMac||''")   # probar con la misma Electron que lleva el Mac
+          npx electron-builder --projectDir build/suite --linux dir --publish never ${MACV:+-c.electronVersion=$MACV} >/dev/null
           SH_SHARED_DIR="$RUNNER_TEMP/shs" SH_SELFTEST="$RUNNER_TEMP/suite.json" timeout 300 xvfb-run -a build/suite/dist/linux-unpacked/sampledhead --no-sandbox || true
           cat "$RUNNER_TEMP/suite.json" | head -c 4000 || true
           node -e 'const d=require(process.env.RUNNER_TEMP+"/suite.json");if(!d.ok){console.log("::warning title=SampledHead::La autoprueba no ha salido bien");}'

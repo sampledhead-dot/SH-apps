@@ -1,6 +1,6 @@
 # SampledHead Apps nativas (Windows · Mac · Android) — Hoja de proyecto
 
-**Versión actual:** 1.6.0 (19-11-2026) · etiqueta de descargas `apps-v1.3.3` (paquetes 1.3.3) · plataforma SampledHead 1.0.2
+**Versión actual:** 1.6.0 (19-11-2026) · etiqueta de descargas `apps-v1.3.4` (paquetes 1.3.4) · plataforma SampledHead 1.0.2
 **Descargas:** https://github.com/sampledhead-dot/SH-apps/releases/latest
 
 ## Descripción
@@ -21,6 +21,13 @@ usa el micrófono o la interfaz de audio, MIDI y descargas (WAV, ZIP…) igual q
 | `tonopad` | TonoPad | Tono-Pad |
 | `fuzzhead` | FuzzHead | FuzzHead *(se compila en cuanto exista el repositorio)* |
 
+
+## Versión de Electron y macOS mínimo (1.3.4, 19-11-2026)
+- Windows (y la autoprueba general): `electronVersion` (45.x). **Mac: `electronVersionMac` (43.x, la última que funciona en
+  macOS 12 Monterey)**, porque Electron 44+ exige macOS 13 y el Mac del usuario tiene macOS 12.7.6. `scripts/mac-zip.sh`
+  la aplica con `-c.electronVersion` y `LSMinimumSystemVersion` 12.0; la autoprueba de la plataforma en el job de Mac usa
+  la misma versión. Electron 43 recibe parches mientras sea una de las tres últimas versiones (hasta que salga la 46):
+  entonces habrá que decidir si se queda en 43 (sin parches) o si el Mac pasa a macOS 13.
 ## Qué versión tiene cada app (decisión del 18-11-2026)
 | App | Web | Windows / Mac / Android | Plugin VST3/AU |
 |---|---|---|---|
