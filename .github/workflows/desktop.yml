@@ -42,6 +42,8 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       apps: ${{ steps.m.outputs.apps }}
+      desk: ${{ steps.m.outputs.desk }}
+      suite: ${{ steps.m.outputs.suite }}
       version: ${{ steps.m.outputs.version }}
       windows: ${{ steps.m.outputs.windows }}
       mac: ${{ steps.m.outputs.mac }}
@@ -56,10 +58,15 @@ jobs:
           node -e '
             const l = require("./desktop/apps.json");
             const want = (process.env.APPS || "").split(",").map(s => s.trim()).filter(Boolean);
-            const apps = l.apps.filter(a => !want.length || want.includes(a.id)).map(a => ({ id: a.id, repo: a.repo }));
+            const pl = a => a.platforms || ["windows", "mac", "android"];
+            const sel = l.apps.filter(a => !want.length || want.includes(a.id));
+            const apps = sel.filter(a => pl(a).includes("android")).map(a => ({ id: a.id, repo: a.repo }));            // Android
+            const desk = sel.filter(a => pl(a).some(p => p === "windows" || p === "mac")).map(a => ({ id: a.id, repo: a.repo }));   // Windows y Mac
+            const suite = !want.length || want.includes("suite");                                                        // plataforma única
             const s = process.env.SIS;
             require("fs").appendFileSync(process.env.GITHUB_OUTPUT,
-              "apps=" + JSON.stringify(apps) + "\nversion=" + l.wrapperVersion +
+              "apps=" + JSON.stringify(apps) + "\ndesk=" + JSON.stringify(desk.length ? desk : [{ id: "-", repo: "-" }]) + "\ndeskn=" + desk.length +
+              "\nsuite=" + suite + "\nversion=" + l.wrapperVersion +
               "\nwindows=" + (s === "todos" || s === "windows") + "\nmac=" + (s === "todos" || s === "mac") +
               "\nandroid=" + (s === "todos" || s === "android") + "\n");
           '
@@ -73,7 +80,7 @@ jobs:
       fail-fast: false
       max-parallel: 10
       matrix:
-        app: ${{ fromJSON(needs.setup.outputs.apps) }}
+        app: ${{ fromJSON(needs.setup.outputs.desk) }}
     env:
       ELECTRON_SKIP_BINARY_DOWNLOAD: "1"
       CSC_IDENTITY_AUTO_DISCOVERY: "false"
@@ -88,6 +95,7 @@ jobs:
       - name: Descargar la app
         id: src
         run: |
+          if [ "${{ matrix.app.id }}" = "-" ]; then echo "ok=false" >> "$GITHUB_OUTPUT"; exit 0; fi
           if git clone --depth 1 "https://github.com/sampledhead-dot/${{ matrix.app.repo }}.git" "$RUNNER_TEMP/src"; then
             echo "ok=true" >> "$GITHUB_OUTPUT"
           else
@@ -122,7 +130,7 @@ jobs:
       fail-fast: false
       max-parallel: 10
       matrix:
-        app: ${{ fromJSON(needs.setup.outputs.apps) }}
+        app: ${{ fromJSON(needs.setup.outputs.desk) }}
     env:
       ELECTRON_SKIP_BINARY_DOWNLOAD: "1"
       CSC_IDENTITY_AUTO_DISCOVERY: "false"
@@ -137,6 +145,7 @@ jobs:
       - name: Descargar la app
         id: src
         run: |
+          if [ "${{ matrix.app.id }}" = "-" ]; then echo "ok=false" >> "$GITHUB_OUTPUT"; exit 0; fi
           if git clone --depth 1 "https://github.com/sampledhead-dot/${{ matrix.app.repo }}.git" "$RUNNER_TEMP/src"; then
             echo "ok=true" >> "$GITHUB_OUTPUT"
           else
@@ -174,6 +183,92 @@ jobs:
           path: desktop/build/${{ matrix.app.id }}/dist/*.zip
           if-no-files-found: error
 
+  # Plataforma única SampledHead (todas las apps de Windows/Mac en un solo programa)
+  build-suite-windows:
+    needs: setup
+    if: needs.setup.outputs.windows == 'true' && needs.setup.outputs.suite == 'true'
+    name: Windows · SampledHead (plataforma)
+    runs-on: windows-latest
+    env:
+      ELECTRON_SKIP_BINARY_DOWNLOAD: "1"
+      CSC_IDENTITY_AUTO_DISCOVERY: "false"
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Descargar las apps
+        run: bash desktop/scripts/clone-all.sh "$RUNNER_TEMP/srcs"
+      - name: Instalar herramientas
+        working-directory: desktop
+        run: npm ci --no-audit --no-fund
+      - name: Preparar
+        working-directory: desktop
+        run: node scripts/prepare-suite.js "$RUNNER_TEMP/srcs" build/suite
+      - name: Empaquetar
+        working-directory: desktop
+        run: npx electron-builder --projectDir build/suite --win --publish never
+      - uses: actions/upload-artifact@v4
+        with:
+          name: suite-windows
+          path: desktop/build/suite/dist/*.exe
+          if-no-files-found: error
+
+  build-suite-mac:
+    needs: setup
+    if: needs.setup.outputs.mac == 'true' && needs.setup.outputs.suite == 'true'
+    name: Mac · SampledHead (plataforma)
+    runs-on: ubuntu-latest
+    env:
+      ELECTRON_SKIP_BINARY_DOWNLOAD: "1"
+      CSC_IDENTITY_AUTO_DISCOVERY: "false"
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Descargar las apps
+        run: bash desktop/scripts/clone-all.sh "$RUNNER_TEMP/srcs"
+      - name: Instalar rcodesign (firma ad-hoc para Mac desde Linux)
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TAG=$(gh release list -R indygreg/apple-platform-rs --limit 50 --json tagName --jq '[.[]|select(.tagName|startswith("apple-codesign/"))][0].tagName')
+          mkdir -p "$RUNNER_TEMP/rc"
+          gh release download "$TAG" -R indygreg/apple-platform-rs --pattern '*x86_64-unknown-linux-musl.tar.gz' -D "$RUNNER_TEMP/rc"
+          tar xzf "$RUNNER_TEMP"/rc/*.tar.gz -C "$RUNNER_TEMP/rc"
+          sudo install "$(find "$RUNNER_TEMP/rc" -name rcodesign -type f | head -1)" /usr/local/bin/rcodesign
+      - name: Instalar herramientas
+        working-directory: desktop
+        run: npm ci --no-audit --no-fund
+      - name: Preparar
+        working-directory: desktop
+        run: node scripts/prepare-suite.js "$RUNNER_TEMP/srcs" build/suite
+      - name: Autoprueba (Linux + Xvfb)
+        working-directory: desktop
+        continue-on-error: true
+        run: |
+          sudo apt-get install -y -qq xvfb >/dev/null || true
+          npx electron-builder --projectDir build/suite --linux dir --publish never >/dev/null
+          SH_SHARED_DIR="$RUNNER_TEMP/shs" SH_SELFTEST="$RUNNER_TEMP/suite.json" timeout 300 xvfb-run -a build/suite/dist/linux-unpacked/sampledhead --no-sandbox || true
+          cat "$RUNNER_TEMP/suite.json" | head -c 4000 || true
+          node -e 'const d=require(process.env.RUNNER_TEMP+"/suite.json");if(!d.ok){console.log("::warning title=SampledHead::La autoprueba no ha salido bien");}'
+      - name: Empaquetar (Apple Silicon e Intel)
+        working-directory: desktop
+        run: bash scripts/mac-zip.sh suite
+      - uses: actions/upload-artifact@v4
+        with:
+          name: suite-mac
+          path: desktop/build/suite/dist/*.zip
+          if-no-files-found: error
+
   build-android:
     needs: setup
     if: needs.setup.outputs.android == 'true'
@@ -198,6 +293,7 @@ jobs:
       - name: Descargar la app
         id: src
         run: |
+          if [ "${{ matrix.app.id }}" = "-" ]; then echo "ok=false" >> "$GITHUB_OUTPUT"; exit 0; fi
           if git clone --depth 1 "https://github.com/sampledhead-dot/${{ matrix.app.repo }}.git" "$RUNNER_TEMP/src"; then
             echo "ok=true" >> "$GITHUB_OUTPUT"
           else
@@ -258,7 +354,7 @@ jobs:
           if-no-files-found: error
 
   release-windows:
-    needs: [setup, build-windows]
+    needs: [setup, build-windows, build-suite-windows]
     # no publica si la ejecución se cancela; sí aunque falle alguna app suelta
     if: ${{ !cancelled() && needs.setup.result == 'success' && needs.setup.outputs.windows == 'true' && (github.event_name != 'workflow_dispatch' || github.event.inputs.publicar == 'true') }}
     runs-on: ubuntu-latest
@@ -278,7 +374,7 @@ jobs:
         run: bash repo/desktop/scripts/release.sh "*.exe"
 
   release-mac:
-    needs: [setup, build-mac]
+    needs: [setup, build-mac, build-suite-mac]
     # no publica si la ejecución se cancela; sí aunque falle alguna app suelta
     if: ${{ !cancelled() && needs.setup.result == 'success' && needs.setup.outputs.mac == 'true' && (github.event_name != 'workflow_dispatch' || github.event.inputs.publicar == 'true') }}
     runs-on: ubuntu-latest

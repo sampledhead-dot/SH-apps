@@ -14,7 +14,7 @@ const os = require('os');
 const { spawn, execFile } = require('child_process');
 
 let ROOT = '', BANDEJA = '', MODELOS = '', MOTOR = '';
-let CFG = null, log = () => {}, step = () => {};
+let CFG = null, log = () => {}, step = () => {}, OPTS = {};
 
 function ensureDirs() {
   ROOT = process.env.SH_SHARED_DIR || path.join(app.getPath('documents'), 'SampledHead');
@@ -34,6 +34,7 @@ const toAB = buf => buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLe
 
 /* ---------------- Registro de apps instaladas ---------------- */
 function registerSelf() {
+  if (OPTS.register) { try { OPTS.register(path.join(ROOT, 'apps.json')); } catch (e) {} return; }   // la plataforma registra todas sus apps
   const f = path.join(ROOT, 'apps.json'), reg = readJson(f, {});
   let target = process.execPath;
   if (process.platform === 'darwin') { const m = target.match(/^(.*?\.app)\//); if (m) target = m[1]; }
@@ -41,13 +42,15 @@ function registerSelf() {
   reg[CFG.id] = { exe: target, name: CFG.productName, version: CFG.wrapperVersion, ts: Date.now() };
   try { fs.writeFileSync(f, JSON.stringify(reg, null, 1)); } catch (e) { log('aviso', 'apps.json: ' + e.message); }
 }
-function openApp(id) {
-  if (id === CFG.id) return true;
+function openApp(id, wc) {
+  if (OPTS.openApp) { const r = OPTS.openApp(id, wc); if (r) return true; }
+  if (id === (OPTS.appOf ? OPTS.appOf(wc) : CFG.id)) return true;
   const reg = readJson(path.join(ROOT, 'apps.json'), {}), a = reg[id];
   if (!a || !a.exe || !fs.existsSync(a.exe)) return false;
+  const args = a.args || [];
   try {
-    if (process.platform === 'darwin') spawn('open', [a.exe], { detached: true, stdio: 'ignore' }).unref();
-    else spawn(a.exe, [], { detached: true, stdio: 'ignore' }).unref();
+    if (process.platform === 'darwin') spawn('open', [a.exe].concat(args.length ? ['--args'].concat(args) : []), { detached: true, stdio: 'ignore' }).unref();
+    else spawn(a.exe, args, { detached: true, stdio: 'ignore' }).unref();
     step('Abriendo ' + id + ' (' + a.exe + ')');
     return true;
   } catch (e) { log('aviso', 'no se pudo abrir ' + id + ': ' + e.message); return false; }
@@ -287,15 +290,15 @@ async function engineRun(wc, reqId, task, input, params) {
 
 /* ---------------- Conexión con la página (IPC) ---------------- */
 function setup(opts) {
-  CFG = opts.cfg; log = opts.log; step = opts.step;
+  CFG = opts.cfg; log = opts.log; step = opts.step; OPTS = opts;
   ensureDirs(); registerSelf();
   const h = (ch, fn) => ipcMain.handle(ch, async (e, ...a) => fn(e.sender, ...a));
-  h('sh:info', () => ({ appId: CFG.id, platform: process.platform, folder: ROOT, version: CFG.wrapperVersion }));
+  h('sh:info', wc => ({ appId: OPTS.appOf ? OPTS.appOf(wc) : CFG.id, platform: process.platform, folder: ROOT, version: CFG.wrapperVersion, suite: !!OPTS.appOf }));
   h('sh:bridge:put', (wc, to, items) => bridgePut(to, items));
   h('sh:bridge:list', (wc, me) => bridgeList(me));
   h('sh:bridge:remove', (wc, me, ids) => bridgeRemove(me, ids));
   h('sh:bridge:watch', (wc, me) => bridgeWatch(wc, me));
-  h('sh:open', (wc, id) => openApp(id));
+  h('sh:open', (wc, id) => openApp(id, wc));
   h('sh:models:get', (wc, url, name, reqId) => modelGet(wc, url, name, reqId));
   h('sh:models:has', (wc, url, name) => fs.existsSync(modelFile(url, name)));
   h('sh:engine:status', () => engineStatus());
@@ -305,4 +308,4 @@ function setup(opts) {
   h('sh:folder', () => { shell.openPath(ROOT); return ROOT; });
   app.on('before-quit', () => { if (ENG.proc) try { ENG.proc.kill(); } catch (e) {} });
 }
-module.exports = { setup, paths: () => ({ ROOT, BANDEJA, MODELOS, MOTOR }), engineStatus };
+module.exports = { setup, paths: () => ({ ROOT, BANDEJA, MODELOS, MOTOR }), engineStatus, download, run, readJson };

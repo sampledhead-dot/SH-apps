@@ -39,6 +39,7 @@ El logo no se redibuja. Encima del `logo.png` se colocan tres recortes del propi
 Si se cambia el logo, hay que volver a recortar las tres capas y revisar las medidas (`EYE` en `app.js` y `.eye` en `styles.css`).
 
 ## Historial de versiones
+- v14 — enlace destacado a **SampledHead para Windows y Mac** (todas las apps en un programa); Pop!Pads solo ofrece web y Android (`only: ["apk"]` en `APPS`); `sh-core/` (base común de las apps) vive en este repo.
 - v1 — primera versión (3 archivos).
 - v2 — informe de error .txt, versión en pie, standalone, hoja de proyecto.
 - v3 — estética del logo real, logo de SampledHead, iconos reales de las 8 apps (extraídos de sus zips), iconos que se actualizan solos, enlaces a Instagram/correo/Bandcamp.

@@ -4,7 +4,7 @@
    (su manifest.webmanifest o su archivo de logo). Si no se puede leer, se usa la
    copia guardada en icons/, y si tampoco, el emoji. */
 
-const VERSION = "v13";
+const VERSION = "v14";
 const BASE = "https://sampledhead-dot.github.io/";
 const MAIN_LOGO = "logo.png";
 const EYE_WHITE = "eye-white.png";
@@ -26,7 +26,7 @@ const APPS = [
     desc: "Editor de audio y masterización: recorta, limpia, separa stems con IA y exporta en WAV o MP3.", emoji: "🎚️" },
   { name: "Sample Pack Builder", dl: "Sample-Pack-Builder", url: BASE + "spb-head/", liveIcon: "logo.svg", local: "icons/spb.svg",
     desc: "Sube una canción, separa stems y obtén breaks, loops, golpes, notas y acordes en un ZIP.", emoji: "📦" },
-  { name: "Pop!Pads", dl: "PopPads", url: BASE + "poppads/", manifest: "manifest.webmanifest", local: "icons/poppads.png",
+  { name: "Pop!Pads", dl: "PopPads", only: ["apk"], url: BASE + "poppads/", manifest: "manifest.webmanifest", local: "icons/poppads.png",
     desc: "Beat maker de pads para el móvil: graba tu ritmo, cuantiza y toca con tu propia voz.", emoji: "🎤" },
   { name: "Chuleta Beat", dl: "Chuleta-Beat", url: BASE + "Chuleta-beat/", manifest: "manifest.webmanifest", local: "icons/chuleta-beat.png",
     desc: "Buscador de atajos en castellano para SP-404MKII, MPC Sample, Ableton Move y BOSS VE-22.", emoji: "📋" },
@@ -342,6 +342,7 @@ async function openSheet(app) {
   if (sheetApp !== app) return;
   const opts = [];
   KINDS.forEach(k => {
+    if (app.only && !app.only.includes(k.id)) return;   // v14: Pop!Pads solo web y Android
     let a = null;
     if (rel.assets) a = rel.assets.filter(x => x.name.indexOf(app.dl + "-") === 0 && k.re.test(x.name) && /^\d/.test(x.name.slice(app.dl.length + 1)))[0];
     else {

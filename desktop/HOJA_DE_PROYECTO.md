@@ -1,6 +1,6 @@
 # SampledHead Apps nativas (Windows · Mac · Android) — Hoja de proyecto
 
-**Versión actual:** 1.5.0 (19-11-2026) · etiqueta de descargas `apps-v1.2.0` (versión de los paquetes 1.2.0)
+**Versión actual:** 1.6.0 (19-11-2026) · etiqueta de descargas `apps-v1.3.0` (paquetes 1.3.0) · plataforma SampledHead 1.0.0
 **Descargas:** https://github.com/sampledhead-dot/SH-apps/releases/latest
 
 ## Descripción
@@ -134,7 +134,37 @@ Todas las apps de Windows y Mac comparten **Documentos/SampledHead/** (`app/shar
   MuScriptor y SAM Audio con modelos reales (necesitan token), MinGit.
 - Android: cada APK tiene su propio almacenamiento, así que la bandeja entre apps no cruza de una app a otra (sí en la web).
 
+## Plataforma única «SampledHead» (1.6.0, plataforma 1.0.0)
+Todas las apps de Windows/Mac en un solo programa (`desktop/suite/`). Las apps sueltas se siguen generando por ahora.
+- **Qué entra:** las apps de `apps.json` con `windows` o `mac` en `platforms`. **Pop!Pads** tiene `platforms: ["android"]`:
+  solo web y Android (ni plataforma ni instaladores de Windows/Mac).
+- **Inicio** (`suite/home/index.html`, servido en `shapp://home/`): logo, una tarjeta por app elegida (abierta/cerrar,
+  Ctrl/Cmd+n), plugins y ajustes (elegir apps y plugins, traer datos de las apps sueltas, carpeta compartida,
+  actualizaciones, informe). Primera vez: «¿Qué quieres instalar?» con apps, plugins y la opción de importar.
+- **Cada app** en su `WebContentsView` a pantalla completa, con partición propia `persist:<id>` y el mismo origen que la app
+  suelta (`shapp://app/`). Sin pestañas: asa «SH» en el borde izquierdo (vuelve al inicio), Ctrl/Cmd+0 inicio,
+  Ctrl/Cmd+1…9 apps, menú «Apps». Telón con el color y el icono de la app al cambiar. Las apps abiertas siguen vivas.
+- **Actualizaciones:** un `updater.js` por app (`userData/apps/<id>/contenido`): cada app se actualiza sola desde su repo;
+  si está a la vista se avisa y si no se recarga. Si una versión nueva no carga, vuelve a la anterior. El programa avisa
+  si hay un instalador nuevo de la plataforma (versión sacada del nombre `SampledHead-X.Y.Z-…`).
+- **Interconexión:** `shared.js` con `appOf(wc)` y `openApp` → «Enviar a…» cambia de vista dentro de la plataforma.
+  `apps.json` de la carpeta compartida apunta las apps al programa con `--app=<id>` (las apps sueltas también la abren).
+- **Importar de las apps sueltas:** copia `Local Storage`, `IndexedDB`, `databases` y `File System` de
+  `appData/<productName>` a `userData/Partitions/<id>` al arrancar (antes de abrir ninguna app) y reinicia.
+- **Plugins VST3/AU** (`apps.json → plugins`: FuzzHead y SampledHead Tuner): descarga el último `vst-v*` de su repo.
+  Windows: `C:\Program Files\Common Files\VST3` (pide permiso de administrador una vez; si se rechaza, carpeta del usuario
+  `%LOCALAPPDATA%\Programs\Common\VST3`). Mac: `~/Library/Audio/Plug-Ins/VST3` y `Components`, sin cuarentena.
+- **Compilación:** `scripts/clone-all.sh` + `scripts/prepare-suite.js` + electron-builder (Windows) / `mac-zip.sh suite`
+  (Mac). Jobs `build-suite-windows` / `build-suite-mac`; en el de Mac corre la autoprueba en Linux con Xvfb.
+  Artefactos: `SampledHead-<versión>-Windows-Setup.exe`, `SampledHead-<versión>-Mac-AppleSilicon.zip` / `-Mac-Intel.zip`.
+  `release.sh` conserva el prefijo `SampledHead-`.
+- **Autoprueba** (`SH_SELFTEST`): inicio, cada app abierta (elementos, sh-core, appId), «Enviar a…» de SampledHead App a
+  FuzzHead (cambia de vista y llega a su bandeja) y vuelta al inicio. Probado en Linux + Xvfb (19-11-2026): OK.
+  **No probado:** Windows y Mac reales, instalación de plugins (permiso de administrador en Windows, ditto en Mac),
+  importación con datos reales de las apps sueltas.
+
 ## Historial de versiones
+- **1.6.0** (19-11-2026): plataforma única SampledHead 1.0.0; Pop!Pads solo web y Android; paquetes 1.3.0 (`shared.js` admite la plataforma y abrir apps con argumentos).
 - **1.5.0** (19-11-2026): paquetes 1.2.0. Carpeta compartida Documentos/SampledHead (bandeja entre apps, modelos y motor local de IA), `preload.js` con `window.shDesktop`, abrir una app desde otra, autoprueba ampliada.
 - **1.4.0** (19-11-2026): paquetes 1.1.2. Android: la app ya no queda tapada por la barra de estado (Android 15+) y el
   botón «Descargar» del aviso de programa nuevo descarga el APK directamente (antes, en Pop!Pads, abría la página de

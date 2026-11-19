@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SampledHead</title>
+<style>
+:root{--orange:#d65f00;--paper:#f7f1f1;--ink:#111}
+*{box-sizing:border-box;margin:0;padding:0}
+body{min-height:100vh;background:var(--orange);color:var(--ink);font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;line-height:1.45;-webkit-user-select:none;user-select:none}
+.hero{text-align:center;padding:26px 16px 6px}
+.hero img{width:min(56vw,230px);height:auto;animation:float 3.6s ease-in-out infinite alternate;filter:drop-shadow(0 6px 0 rgba(0,0,0,.18))}
+@keyframes float{to{transform:translateY(-7px)}}
+.tag{display:inline-block;margin-top:8px;background:var(--ink);color:var(--paper);font-weight:800;letter-spacing:.06em;padding:4px 12px;border-radius:6px;transform:rotate(-1.5deg)}
+main{max-width:1100px;margin:0 auto;padding:18px 18px 40px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:22px}
+.card{position:relative;width:100%;font:inherit;text-align:left;cursor:pointer;display:flex;gap:14px;align-items:flex-start;padding:16px;color:inherit;background:var(--paper);border:3px solid var(--ink);border-radius:14px;box-shadow:6px 6px 0 var(--ink);transition:transform .12s,box-shadow .12s}
+.card:nth-child(odd){transform:rotate(-.6deg)}.card:nth-child(even){transform:rotate(.6deg)}
+.card:hover,.card:focus-visible{transform:translate(-2px,-3px) rotate(0);box-shadow:9px 10px 0 var(--ink);outline:none}
+.card:active{transform:translate(5px,5px);box-shadow:1px 1px 0 var(--ink)}
+.card img{flex:0 0 68px;width:68px;height:68px;border:3px solid var(--ink);border-radius:14px;background:#fff;object-fit:cover}
+.card h2{font-size:19px;line-height:1.15;margin-bottom:4px}.card p{font-size:14px;color:#3b2a1e}
+.card .k{position:absolute;right:12px;bottom:8px;font-size:11px;font-weight:800;opacity:.45}
+.card .on{position:absolute;top:-10px;right:14px;background:#2bb673;color:#fff;font-size:11px;font-weight:800;padding:2px 9px;border:2px solid var(--ink);border-radius:999px}
+.card .x{position:absolute;top:-10px;right:78px;background:var(--paper);font-size:11px;font-weight:800;padding:2px 8px;border:2px solid var(--ink);border-radius:999px;cursor:pointer}
+.card .up{position:absolute;top:-10px;left:14px;background:#ffd60a;font-size:11px;font-weight:800;padding:2px 9px;border:2px solid var(--ink);border-radius:999px}
+h3.sec{margin:30px 0 12px;display:inline-block;background:var(--ink);color:var(--paper);padding:3px 12px;border-radius:6px;transform:rotate(-1deg);font-size:15px;letter-spacing:.05em}
+.tools{display:flex;flex-wrap:wrap;gap:10px}
+.btn{font:700 14px system-ui,sans-serif;background:var(--paper);border:3px solid var(--ink);border-radius:12px;padding:9px 14px;cursor:pointer;box-shadow:4px 4px 0 var(--ink)}
+.btn:active{transform:translate(3px,3px);box-shadow:1px 1px 0 var(--ink)}
+.btn.pri{background:var(--ink);color:var(--paper)}
+.btn:disabled{opacity:.5;cursor:default}
+footer{text-align:center;color:var(--paper);font-size:13px;padding:10px 0 24px;opacity:.9}
+/* elección de apps y plugins */
+#pick{position:fixed;inset:0;background:rgba(0,0,0,.55);display:none;align-items:center;justify-content:center;padding:16px;z-index:10}
+#pick.on{display:flex}
+#pick .box{background:var(--paper);border:3px solid var(--ink);border-radius:16px;box-shadow:8px 8px 0 var(--ink);width:min(640px,100%);max-height:calc(100vh - 32px);overflow:auto;padding:18px 20px}
+#pick h2{font-size:22px;margin-bottom:4px}#pick .sub{font-size:14px;color:#3b2a1e;margin-bottom:10px}
+#pick h4{margin:14px 0 6px;font-size:14px;letter-spacing:.05em;text-transform:uppercase}
+#pick label{display:flex;gap:10px;align-items:center;padding:7px 8px;border-radius:10px;cursor:pointer}
+#pick label:hover{background:#eee4e4}
+#pick label img{width:36px;height:36px;border:2px solid var(--ink);border-radius:9px}
+#pick label b{display:block;font-size:15px}#pick label small{color:#3b2a1e}
+#pick input[type=checkbox]{width:20px;height:20px;accent-color:var(--orange)}
+#pick .row{display:flex;gap:10px;flex-wrap:wrap;justify-content:flex-end;margin-top:14px}
+#prog{font-size:13px;margin-top:8px;min-height:1.3em;color:#3b2a1e}
+.note{font-size:13px;color:#3b2a1e}
+</style>
+</head>
+<body>
+<div class="hero"><img src="logo.png" alt="SampledHead"><br><span class="tag">APPS PARA BEATMAKERS</span></div>
+<main>
+  <div class="grid" id="grid"></div>
+  <h3 class="sec">PLUGINS PARA TU DAW</h3>
+  <div class="grid" id="plugins"></div>
+  <h3 class="sec">AJUSTES</h3>
+  <div class="tools">
+    <button class="btn" id="bpick">Elegir apps y plugins</button>
+    <button class="btn" id="bimport" hidden>Traer mis datos de las apps sueltas</button>
+    <button class="btn" id="bfolder">Carpeta compartida</button>
+    <button class="btn" id="bupd">Buscar actualizaciones</button>
+    <button class="btn" id="brep">Descargar informe (.txt)</button>
+  </div>
+  <p class="note" style="margin-top:12px;color:var(--paper)">Cambia de app con el asa <b>SH</b> del borde izquierdo o con <b id="mod">Ctrl</b>+1…9 (y <b class="mod2">Ctrl</b>+0 para volver aquí). Las apps abiertas siguen funcionando mientras usas otra.</p>
+</main>
+<footer id="foot">SampledHead</footer>
+
+<div id="pick"><div class="box">
+  <h2 id="ptitle">¿Qué quieres instalar?</h2>
+  <div class="sub" id="psub">Elige las apps que quieres ver en SampledHead y los plugins para tu DAW. Puedes cambiarlo cuando quieras.</div>
+  <h4>Apps</h4><div id="papps"></div>
+  <h4>Plugins (VST3 / AU)</h4><div id="pplug"></div>
+  <div id="pimp"></div>
+  <div id="prog"></div>
+  <div class="row"><button class="btn" id="pall">Marcar todo</button><button class="btn" id="pcancel">Cancelar</button><button class="btn pri" id="pok">Instalar</button></div>
+</div></div>
+
+<script>
+const $ = s => document.querySelector(s);
+let S = null, busy = false;
+const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+function render() {
+  const mod = S.platform === 'darwin' ? '⌘' : 'Ctrl'; $('#mod').textContent = mod; document.querySelectorAll('.mod2').forEach(e => e.textContent = mod);
+  const g = $('#grid'); g.innerHTML = '';
+  const apps = S.apps.filter(a => a.chosen);
+  if (!apps.length) g.innerHTML = '<p class="note" style="color:#fff">No has elegido ninguna app. Pulsa «Elegir apps y plugins».</p>';
+  apps.forEach((a, i) => {
+    const c = document.createElement('button'); c.className = 'card'; c.type = 'button';
+    c.innerHTML = '<img src="icons/' + a.id + '.png" alt=""><div><h2>' + esc(a.name) + '</h2><p>' + esc(a.desc) + '</p></div>' +
+      (a.open ? '<span class="on">abierta</span><span class="x" title="Cerrar esta app">cerrar</span>' : '') + (UPD[a.id] ? '<span class="up">actualizada</span>' : '') +
+      (i < 9 ? '<span class="k">' + (S.platform === 'darwin' ? '⌘' : 'Ctrl+') + (i + 1) + '</span>' : '');
+    c.onclick = e => { if (e.target.classList.contains('x')) { e.stopPropagation(); shHome.close(a.id); return; } shHome.open(a.id); };
+    g.appendChild(c);
+  });
+  const pg = $('#plugins'); pg.innerHTML = '';
+  S.plugins.forEach(p => {
+    const c = document.createElement('div'); c.className = 'card'; c.style.cursor = 'default';
+    c.innerHTML = '<img src="icons/' + p.app + '.png" alt=""><div style="flex:1"><h2>' + esc(p.name) + '</h2><p>' + esc(p.desc) + '</p><p style="margin-top:8px"><button class="btn">' + (p.installed ? 'Reinstalar / actualizar' : 'Instalar') + '</button> ' +
+      (p.installed ? '<button class="btn" data-f>Ver carpeta</button>' : '') + '</p><p class="note" data-p></p></div>' + (p.installed ? '<span class="on">instalado</span>' : '');
+    c.querySelector('.btn').onclick = () => installPlugins([p.id], c.querySelector('[data-p]'));
+    const f = c.querySelector('[data-f]'); if (f) f.onclick = () => shHome.pluginFolder();
+    pg.appendChild(c);
+  });
+  $('#bimport').hidden = !S.legacy.length;
+  $('#foot').textContent = 'SampledHead v' + S.version + ' · By SampledHead';
+}
+const UPD = {};
+async function refresh() { S = await shHome.state(); render(); if (S.firstRun) openPick(true); }
+shHome.on('state', d => { S = d; render(); });
+shHome.on('update', d => { UPD[d.id] = 1; render(); });
+let progCb = null; shHome.on('progress', d => progCb && progCb(d));
+
+async function installPlugins(ids, out) {
+  for (const id of ids) {
+    const p = S.plugins.find(x => x.id === id);
+    progCb = d => { if (d.id === id && out) out.textContent = Math.round((d.frac || 0) * 100) + '% · ' + (d.stage || ''); };
+    try { const r = await shHome.plugin(id); if (out) out.textContent = p.name + ' ' + r.version + ' instalado en ' + r.where; }
+    catch (e) { if (out) out.textContent = 'No se pudo instalar ' + p.name + ': ' + String(e.message || e).replace(/^Error invoking remote method[^:]*: (Error: )?/, ''); }
+  }
+  progCb = null; S = await shHome.state(); render();
+}
+function openPick(first) {
+  $('#ptitle').textContent = first ? '¡Bienvenido a SampledHead! ¿Qué quieres instalar?' : 'Elegir apps y plugins';
+  $('#pcancel').hidden = !!first; $('#pok').textContent = first ? 'Instalar' : 'Guardar';
+  const pa = $('#papps'); pa.innerHTML = '';
+  S.apps.forEach(a => { const l = document.createElement('label'); l.innerHTML = '<input type="checkbox" data-a="' + a.id + '"' + (a.chosen ? ' checked' : '') + '><img src="icons/' + a.id + '.png" alt=""><span><b>' + esc(a.name) + '</b><small>' + esc(a.desc) + '</small></span>'; pa.appendChild(l); });
+  const pp = $('#pplug'); pp.innerHTML = '';
+  S.plugins.forEach(p => { const l = document.createElement('label'); l.innerHTML = '<input type="checkbox" data-p="' + p.id + '"' + (first ? '' : '') + '><img src="icons/' + p.app + '.png" alt=""><span><b>' + esc(p.name) + (p.installed ? ' · ya instalado' : '') + '</b><small>' + esc(p.desc) + '</small></span>'; pp.appendChild(l); });
+  $('#pimp').innerHTML = S.legacy.length && !S.imported ? '<h4>Tus apps anteriores</h4><label><input type="checkbox" id="pimpc" checked><span><b>Traer mis kits, presets y proyectos</b><small>De las apps sueltas que ya tienes instaladas: ' + S.legacy.map(id => esc((S.apps.find(a => a.id === id) || {}).name || id)).join(', ') + '. SampledHead se reiniciará una vez.</small></span></label>' : '';
+  $('#prog').textContent = ''; $('#pick').classList.add('on');
+}
+$('#pall').onclick = () => document.querySelectorAll('#pick input[type=checkbox]').forEach(c => c.checked = true);
+$('#pcancel').onclick = () => $('#pick').classList.remove('on');
+$('#pok').onclick = async () => {
+  if (busy) return; busy = true; $('#pok').disabled = true;
+  const apps = [...document.querySelectorAll('[data-a]')].filter(c => c.checked).map(c => c.dataset.a);
+  const plugs = [...document.querySelectorAll('[data-p]')].filter(c => c.checked).map(c => c.dataset.p);
+  if (!apps.length) { $('#prog').textContent = 'Elige al menos una app.'; busy = false; $('#pok').disabled = false; return; }
+  S = await shHome.choose(apps, plugs);
+  if (plugs.length) await installPlugins(plugs, $('#prog'));
+  const imp = $('#pimpc');
+  if (imp && imp.checked) { $('#prog').textContent = 'Traigo tus datos y reinicio…'; await shHome.importData(S.legacy.filter(id => apps.includes(id))); return; }
+  if (imp && !imp.checked) await shHome.skipImport();
+  busy = false; $('#pok').disabled = false;
+  setTimeout(() => $('#pick').classList.remove('on'), plugs.length ? 1800 : 0);
+  render();
+};
+$('#bpick').onclick = () => openPick(false);
+$('#bimport').onclick = () => { if (confirm('Se copiarán los kits, presets y proyectos de tus apps sueltas (' + S.legacy.join(', ') + ') y SampledHead se reiniciará. Lo que tengas ya dentro de SampledHead en esas apps se sustituye. ¿Seguir?')) shHome.importData(S.legacy); };
+$('#bfolder').onclick = () => shHome.folder();
+$('#bupd').onclick = () => shHome.updates();
+$('#brep').onclick = () => shHome.report();
+refresh();
+</script>
+</body>
+</html>

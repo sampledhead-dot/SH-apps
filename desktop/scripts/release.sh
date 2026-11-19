@@ -12,6 +12,8 @@ ls -la "${FILES[@]}"
 VER="${TAG#apps-v}"
 NOTES="Apps de Sampled Head v$VER para **Windows, Mac y Android** (el portal SH-apps sigue siendo solo web: https://sampledhead-dot.github.io/SH-apps/).
 
+**Nuevo: SampledHead** — todas las apps en un solo programa para Windows y Mac (\`SampledHead-…-Windows-Setup.exe\` o \`SampledHead-…-Mac-….zip\`). Al abrirlo eliges qué apps y qué plugins VST/AU quieres. Los instaladores sueltos de cada app se mantienen por ahora. Pop!Pads es solo para web y Android.
+
 **Windows**: descarga el \`-Windows-Setup.exe\` de la app. Si aparece «Windows protegió su PC»: *Más información → Ejecutar de todas formas*.
 
 **Mac**: descarga el \`-Mac-AppleSilicon.zip\` (Mac con chip M1/M2/M3/M4) o el \`-Mac-Intel.zip\` (Mac con Intel), descomprímelo y arrastra la app a Aplicaciones. La primera vez: clic derecho sobre la app → *Abrir*. Si dice que está dañada o no se puede abrir, en Terminal:
@@ -42,7 +44,7 @@ done
 
 # Retirar descargas de apps que ya no están en la lista
 # (también el nombre visible, p. ej. «Pop-Pads-…»: es la copia que buscan los APK v1.1.1 y anteriores)
-node -e 'const l = require("./repo/desktop/apps.json"); console.log([...new Set(l.apps.flatMap(a => [a.productName, a.name]).map(n => n.replace(/[^A-Za-z0-9]+/g, "-") + "-"))].join("\n"))' > keep.txt
+node -e 'const l = require("./repo/desktop/apps.json"); console.log([...new Set(l.apps.flatMap(a => [a.productName, a.name]).map(n => n.replace(/[^A-Za-z0-9]+/g, "-") + "-").concat(["SampledHead-"]))].join("\n"))' > keep.txt
 gh release view "$TAG" -R "$REPO" --json assets --jq '.assets[].name' | while read -r n; do
   keep=0
   while read -r p; do case "$n" in "$p"[0-9]*) keep=1 ;; esac; done < keep.txt
