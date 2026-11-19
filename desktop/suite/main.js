@@ -348,11 +348,24 @@ function buildMenu() {
 }
 
 /* ---------------- arranque ---------------- */
+function reveal() {   // mostrar la ventana, dentro de una pantalla visible y delante
+  if (!win || win.isDestroyed()) return;
+  try {
+    const b = win.getBounds();
+    const ok = screen.getAllDisplays().some(d => { const a = d.workArea; return b.x < a.x + a.width - 40 && b.x + b.width > a.x + 40 && b.y < a.y + a.height - 40 && b.y + b.height > a.y; });
+    if (!ok) win.center();
+  } catch (e) {}
+  if (win.isMinimized()) win.restore();
+  if (!win.isVisible()) { win.show(); step('Ventana visible'); }
+  win.focus();
+}
 async function createWindow() {
   step('Creando ventana');
   const { width, height } = screen.getPrimaryDisplay().workAreaSize;
   win = new BrowserWindow({ width: Math.min(1360, width), height: Math.min(900, height), minWidth: 380, minHeight: 500, show: false, title: 'SampledHead', backgroundColor: '#d65f00', icon: path.join(__dirname, 'icon.png') });
-  win.once('ready-to-show', () => win.show()); if (SELFTEST) win.show();
+  /* 1.0.3: no depender solo de 'ready-to-show' (la ventana no carga nada propio: todo va en WebContentsView y en algunos
+     Mac con Electron 43 no llegaba a mostrarse). Se muestra al cargar el inicio y, si no, a los 2,5 s. */
+  win.once('ready-to-show', reveal); setTimeout(reveal, 2500); if (SELFTEST) win.show();
   session.defaultSession.protocol.handle(SCHEME, serveFrom(host => path.join(__dirname, host === 'handle' ? 'home' : 'home')));
   home = new WebContentsView({ webPreferences: { contextIsolation: true, sandbox: true, preload: path.join(__dirname, 'home-preload.js') } });
   home.setBackgroundColor('#d65f00');
@@ -365,6 +378,7 @@ async function createWindow() {
   win.on('resize', layout); layout();
   homeIpc(); buildMenu();
   await home.webContents.loadURL(SCHEME + '://home/index.html');
+  reveal();
   await handle.webContents.loadURL(SCHEME + '://home/handle.html');
   handle.setVisible(false);
   const start = process.argv.find(a => a.startsWith('--app='));
@@ -408,7 +422,7 @@ async function selftest() {
 }
 
 if (!SELFTEST && !app.requestSingleInstanceLock()) app.quit();
-app.on('second-instance', (e, argv) => { if (!win) return; if (win.isMinimized()) win.restore(); win.focus(); const a = argv.find(x => x.startsWith('--app=')); if (a) show(a.slice(6)); });
+app.on('second-instance', (e, argv) => { if (!win) return; reveal(); const a = argv.find(x => x.startsWith('--app=')); if (a) show(a.slice(6)); });
 app.setName('SampledHead');
 if (SELFTEST) { app.commandLine.appendSwitch('use-fake-device-for-media-stream'); app.commandLine.appendSwitch('use-fake-ui-for-media-stream'); app.setPath('userData', process.env.SH_USERDATA || path.join(os.tmpdir(), 'sh-suite-test-' + process.pid)); }
 app.whenReady().then(() => {
@@ -429,3 +443,4 @@ app.whenReady().then(() => {
   return createWindow();
 }).catch(e => onFail('arranque', e));
 app.on('window-all-closed', () => { savePref(); app.quit(); });
+app.on('activate', () => reveal());   // Mac: clic en el Dock o abrirla otra vez desde el Finder

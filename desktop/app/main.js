@@ -217,6 +217,7 @@ async function createWindow() {
   });
   const wc = win.webContents;
   win.once('ready-to-show', () => win.show());
+  setTimeout(() => { if (win && !win.isDestroyed() && !win.isVisible()) win.show(); }, 4000);   // 1.3.5: por si 'ready-to-show' no llega
   if (SELFTEST) win.show();
 
   // Enlaces a otras webs y ventanas nuevas → navegador del sistema
@@ -384,3 +385,4 @@ app.whenReady().then(() => {
   return createWindow();
 }).catch(e => onFail('arranque', e));
 app.on('window-all-closed', () => app.quit());
+app.on('activate', () => { if (win && !win.isDestroyed()) { if (win.isMinimized()) win.restore(); win.show(); win.focus(); } });

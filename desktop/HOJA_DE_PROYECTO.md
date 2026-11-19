@@ -1,6 +1,6 @@
 # SampledHead Apps nativas (Windows · Mac · Android) — Hoja de proyecto
 
-**Versión actual:** 1.6.0 (19-11-2026) · etiqueta de descargas `apps-v1.3.4` (paquetes 1.3.4) · plataforma SampledHead 1.0.2
+**Versión actual:** 1.6.0 (19-11-2026) · etiqueta de descargas `apps-v1.3.5` (paquetes 1.3.5) · plataforma SampledHead 1.0.3
 **Descargas:** https://github.com/sampledhead-dot/SH-apps/releases/latest
 
 ## Descripción
@@ -28,6 +28,11 @@ usa el micrófono o la interfaz de audio, MIDI y descargas (WAV, ZIP…) igual q
   la aplica con `-c.electronVersion` y `LSMinimumSystemVersion` 12.0; la autoprueba de la plataforma en el job de Mac usa
   la misma versión. Electron 43 recibe parches mientras sea una de las tres últimas versiones (hasta que salga la 46):
   entonces habrá que decidir si se queda en 43 (sin parches) o si el Mac pasa a macOS 13.
+- **Plataforma 1.0.3 / paquetes 1.3.5**: en el iMac del usuario (Monterey, Intel, AMD) la plataforma arrancaba con menú
+  pero sin ventana. La ventana se mostraba solo con `ready-to-show`, que puede no llegar porque la ventana no carga nada
+  propio (todo va en `WebContentsView`). Ahora `reveal()` la muestra al cargar el inicio y a los 2,5 s como respaldo, la
+  centra si quedó fuera de la pantalla, y `activate` (clic en el Dock / abrirla otra vez) la vuelve a mostrar. Las apps
+  sueltas: respaldo de 4 s y `activate`.
 ## Qué versión tiene cada app (decisión del 18-11-2026)
 | App | Web | Windows / Mac / Android | Plugin VST3/AU |
 |---|---|---|---|
