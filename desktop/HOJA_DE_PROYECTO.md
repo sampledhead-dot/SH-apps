@@ -1,6 +1,6 @@
 # SampledHead Apps nativas (Windows · Mac · Android) — Hoja de proyecto
 
-**Versión actual:** 1.6.0 (19-11-2026) · etiqueta de descargas `apps-v1.3.0` (paquetes 1.3.1) · plataforma SampledHead 1.0.1
+**Versión actual:** 1.6.0 (19-11-2026) · etiqueta de descargas `apps-v1.3.3` (paquetes 1.3.3) · plataforma SampledHead 1.0.2
 **Descargas:** https://github.com/sampledhead-dot/SH-apps/releases/latest
 
 ## Descripción
@@ -154,7 +154,7 @@ Todas las apps de Windows/Mac en un solo programa (`desktop/suite/`). Las apps s
 - **Traer datos de las versiones web (1.0.1):** cada app web guarda una copia `.shdatos` (sh-core `SH.backup`: solo sus
   claves de localStorage y sus bases IndexedDB). «Traer mis datos» → «Elegir archivos .shdatos» las deja en
   `userData/pendientes/<app>.shdatos`; al abrir la app, sh-core la pide (`shDesktop.backup.pending`), la aplica y recarga.
-- **Plugins VST3/AU** (`apps.json → plugins`: FuzzHead y SampledHead Tuner): descarga el último `vst-v*` de su repo.
+- **Plugins VST3/AU** (`apps.json → plugins`: FuzzHead, TapeHead y SampledHead Tuner): descarga el último `vst-v*` de su repo.
   Windows: `C:\Program Files\Common Files\VST3` (pide permiso de administrador una vez; si se rechaza, carpeta del usuario
   `%LOCALAPPDATA%\Programs\Common\VST3`). Mac: `~/Library/Audio/Plug-Ins/VST3` y `Components`, sin cuarentena.
 - **Compilación:** `scripts/clone-all.sh` + `scripts/prepare-suite.js` + electron-builder (Windows) / `mac-zip.sh suite`
