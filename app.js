@@ -4,7 +4,7 @@
    (su manifest.webmanifest o su archivo de logo). Si no se puede leer, se usa la
    copia guardada en icons/, y si tampoco, el emoji. */
 
-const VERSION = "v12";
+const VERSION = "v13";
 const BASE = "https://sampledhead-dot.github.io/";
 const MAIN_LOGO = "logo.png";
 const EYE_WHITE = "eye-white.png";
@@ -15,7 +15,7 @@ const LIVE_TIMEOUT_MS = 6000;
    se usan estos enlaces de reserva: actualiza DL_FALLBACK cuando cambie la versión de las apps. */
 const GH = "https://github.com/sampledhead-dot/";
 const GH_API = "https://api.github.com/repos/sampledhead-dot/";
-const DL_FALLBACK = { tag: "apps-v1.1.0", version: "1.1.0" };
+const DL_FALLBACK = { tag: "apps-v1.1.1", version: "1.1.1" };
 
 const APPS = [
   { name: "SampledHead App", dl: "SampledHead-App", url: BASE + "sampledhead-app/", manifest: "manifest.webmanifest", local: "icons/sampledhead-app.png",

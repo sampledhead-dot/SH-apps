@@ -1,6 +1,6 @@
 # SampledHead Apps nativas (Windows · Mac · Android) — Hoja de proyecto
 
-**Versión actual:** 1.2.0 (18-11-2026) · etiqueta de descargas `apps-v1.1.0` (versión de los paquetes 1.1.0)
+**Versión actual:** 1.3.0 (19-11-2026) · etiqueta de descargas `apps-v1.1.1` (versión de los paquetes 1.1.1)
 **Descargas:** https://github.com/sampledhead-dot/SH-apps/releases/latest
 
 ## Descripción
@@ -106,6 +106,7 @@ Las apps de Windows, Mac y Android **se actualizan solas** cuando cambia la web 
 - Informe de error .txt automático y opción manual en el menú Ayuda.
 
 ## Historial de versiones
+- **1.3.0** (19-11-2026): **iconos adaptativos en Android** (paquetes 1.1.1). Antes Android metía el icono en una placa blanca porque solo había un PNG. `android/scripts/make-icons.py` genera, desde `desktop/icons/<id>.png`, una capa de fondo (color liso del propio icono), el dibujo con un ajuste por tipo de icono (a sangre, redondeado, con marco, círculo) y la capa monocroma para los iconos temáticos de Android 13+. Comprobado con vista previa en círculo, squircle, cuadrado redondeado y gota, y con `aapt` en el APK. Si cambia un icono: `python3 android/scripts/make-icons.py --preview /tmp/iconos.png` y revisar la vista previa.
 - **1.2.0** (18-11-2026): **actualizaciones automáticas** del contenido y aviso de programa nuevo (paquetes 1.1.0, release `apps-v1.1.0`; la anterior se retira).
   Probado con un servidor que imita a GitHub y el historial real de Pop!Pads (v1.13 incluida → v1.14 descargada): solo baja los 3 archivos cambiados (232 KB, 2 consultas). Probado con Electron real: dos arranques y vuelta atrás con una versión estropeada. El APK compila y se firma; **no se ha probado en un móvil**.
 - **1.1.0** (18-11-2026): versiones **Android (APK)**; **Mac generado en Linux** (zip Apple Silicon + Intel con firma ad-hoc);
