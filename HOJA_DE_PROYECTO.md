@@ -39,6 +39,7 @@ El logo no se redibuja. Encima del `logo.png` se colocan tres recortes del propi
 Si se cambia el logo, hay que volver a recortar las tres capas y revisar las medidas (`EYE` en `app.js` y `.eye` en `styles.css`).
 
 ## Historial de versiones
+- v15 — tarjeta de **TapeHead** (solo plugin: `vstOnly: true` en `APPS`): la hoja no ofrece web ni instaladores; enseña «Probar en TonoPad» (`alt`) y los zips VST de Windows y Mac (VST3 + AU + Standalone) de su última release `vst-v*`; en el Mac/Windows del visitante se marca el suyo. Ayuda de instalación de VST con la ruta de Mac.
 - v14 — enlace destacado a **SampledHead para Windows y Mac** (todas las apps en un programa); Pop!Pads solo ofrece web y Android (`only: ["apk"]` en `APPS`); `sh-core/` (base común de las apps) vive en este repo.
 - v1 — primera versión (3 archivos).
 - v2 — informe de error .txt, versión en pie, standalone, hoja de proyecto.

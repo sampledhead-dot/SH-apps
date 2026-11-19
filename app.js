@@ -1,10 +1,10 @@
-/* SampledHead · Portal de apps · v11 (cada tarjeta abre sus versiones: web, Windows, Mac, Android y VST)
+/* SampledHead · Portal de apps · v15 (cada tarjeta abre sus versiones: web, Windows, Mac, Android y VST)
    Añadir una app: copia un bloque de APPS.
    Logos: cada vez que se abre el portal se lee el icono ACTUAL de cada app
    (su manifest.webmanifest o su archivo de logo). Si no se puede leer, se usa la
    copia guardada en icons/, y si tampoco, el emoji. */
 
-const VERSION = "v14";
+const VERSION = "v15";
 const BASE = "https://sampledhead-dot.github.io/";
 const MAIN_LOGO = "logo.png";
 const EYE_WHITE = "eye-white.png";
@@ -35,7 +35,11 @@ const APPS = [
   { name: "TonoPad", dl: "TonoPad", url: BASE + "Tono-Pad/", manifest: "manifest.webmanifest", local: "icons/tonopad.svg",
     desc: "Detecta el tono y la escala de un audio y genera bancos de 16 pads afinados para SP-404MKII, Move, MPC Sample y Live.", emoji: "🎹" },
   { name: "FuzzHead", dl: "FuzzHead", vst: { repo: "FuzzHead", tag: "vst-v1.0.1", file: "FuzzHead-VST-1.0.1-Windows.zip" }, url: BASE + "FuzzHead/", manifest: "manifest.webmanifest", local: "icons/fuzzhead.png",
-    desc: "Convierte tu guitarra o bajo en sintetizador: 5 motores, distorsión, bitcrush, ring mod y gated reverb.", emoji: "🎛️" }
+    desc: "Convierte tu guitarra o bajo en sintetizador: 5 motores, distorsión, bitcrush, ring mod y gated reverb.", emoji: "🎛️" },
+  /* v15: TapeHead es solo plugin (sin web propia): la tarjeta abre la hoja con el VST y el enlace a TonoPad, que lo lleva dentro */
+  { name: "TapeHead", dl: "TapeHead", vstOnly: true, vst: { repo: "TapeHead", tag: "vst-v1.0.0", file: "TapeHead-VST-1.0.0-Windows.zip" }, local: "icons/tapehead.png",
+    alt: { url: BASE + "Tono-Pad/", t: "Probar en TonoPad (navegador)", s: "TapeHead va dentro de TonoPad como efecto de los pads. Sin instalar nada." },
+    desc: "Plugin VST3/AU: la entrada de una multipista de casete de los 80. Satura y engorda guitarras, bajos y baterías (presets punk, post-punk, grunge, noise…).", emoji: "📼" }
 ];
 
 /* ---------- Registro para el informe de error ---------- */
@@ -122,6 +126,7 @@ async function liveIconUrl(app) {
     if (src.startsWith("data:")) return src;
     return URL.createObjectURL(await fetchNoCache(new URL(src, mUrl).href, "blob"));
   }
+  if (!app.url) throw new Error("app sin web (solo plugin)");
   if (app.liveIcon) return URL.createObjectURL(await fetchNoCache(app.url + app.liveIcon, "blob"));
   throw new Error("sin origen de icono vivo");
 }
@@ -327,20 +332,23 @@ async function openSheet(app) {
   else ic.textContent = app.emoji;
 
   const web = document.getElementById("sh-web"); web.innerHTML = "";
-  web.appendChild(optEl({ ico: "🌐", t: "Abrir versión web", s: "En el navegador, sin instalar nada. Funciona en móvil, tablet y ordenador.", url: app.url, primary: true, mine: OS === "ios" || OS === "linux" }));
+  if (app.url) web.appendChild(optEl({ ico: "🌐", t: "Abrir versión web", s: "En el navegador, sin instalar nada. Funciona en móvil, tablet y ordenador.", url: app.url, primary: true, mine: OS === "ios" || OS === "linux" }));
+  else if (app.alt) web.appendChild(optEl({ ico: "🌐", t: app.alt.t, s: app.alt.s, url: app.alt.url, primary: true }));
+  document.getElementById("sh-dlh").style.display = app.vstOnly ? "none" : "";
 
   const list = document.getElementById("sh-dl"), state = document.getElementById("sh-state");
   list.innerHTML = ""; state.textContent = "Buscando las últimas versiones…"; state.hidden = false;
   document.getElementById("sh-vst").hidden = !app.vst;
   const vbox = document.getElementById("sh-vstlist"); vbox.innerHTML = "";
-  document.getElementById("sh-all").href = GH + "SH-apps/releases/latest";
+  document.getElementById("sh-all").href = GH + (app.vstOnly ? app.vst.repo : "SH-apps") + "/releases/latest";
   location.hash = "app=" + slug(app);
   if (!dlg.open) { if (dlg.showModal) dlg.showModal(); else dlg.setAttribute("open", ""); }
   document.body.classList.add("sheet-open");
 
+  const opts = [];
+  if (app.vstOnly) { state.hidden = true; await showVst(app); return; }
   const rel = await appsRelease();
   if (sheetApp !== app) return;
-  const opts = [];
   KINDS.forEach(k => {
     if (app.only && !app.only.includes(k.id)) return;   // v14: Pop!Pads solo web y Android
     let a = null;
@@ -357,15 +365,19 @@ async function openSheet(app) {
   state.hidden = !!opts.length && rel.live;
   state.textContent = !opts.length ? "Esta app aún no tiene versión descargable. Usa la versión web." :
     "No he podido consultar GitHub ahora mismo: estos enlaces son de la última versión conocida (" + DL_FALLBACK.tag + ").";
-  if (app.vst) {
-    const v = await vstRelease(app);
-    if (sheetApp !== app) return;
-    v.forEach(a => {
-      const plat = /Mac/i.test(a.name) ? "Mac" : /Linux/i.test(a.name) ? "Linux" : "Windows";
-      vbox.appendChild(optEl({ ico: "🎛️", t: "Plugin VST3 + Standalone · " + plat, s: "Para tu DAW (Ableton, Reaper, FL…) y app de escritorio con baja latencia (.zip)", url: a.url, download: true,
-        meta: [a.tag.replace("vst-", ""), fmtSize(a.size)].filter(Boolean).join(" · "), mine: false }));
-    });
-  }
+  if (app.vst) await showVst(app);
+}
+async function showVst(app) {
+  const vbox = document.getElementById("sh-vstlist");
+  const v = await vstRelease(app);
+  if (sheetApp !== app) return;
+  v.forEach(a => {
+    const plat = /Mac/i.test(a.name) ? "Mac" : /Linux/i.test(a.name) ? "Linux" : "Windows";
+    const os = plat === "Mac" ? "mac" : plat === "Windows" ? "windows" : "linux";
+    vbox.appendChild(optEl({ ico: "🎛️", t: (plat === "Mac" ? "Plugin VST3 + AU + Standalone · " : "Plugin VST3 + Standalone · ") + plat,
+      s: "Para tu DAW (Ableton, Logic, Reaper, FL…) y app de escritorio con baja latencia (.zip)", url: a.url, download: true,
+      meta: [a.tag.replace("vst-", ""), fmtSize(a.size)].filter(Boolean).join(" · "), mine: !!app.vstOnly && os === OS }));
+  });
 }
 function closeSheet() {
   const dlg = document.getElementById("sheet");
