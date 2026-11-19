@@ -50,11 +50,9 @@ usa el micrófono o la interfaz de audio, MIDI y descargas (WAV, ZIP…) igual q
 - `versionCode` = 1.000.000 + número de ejecución (siempre sube, para que se pueda actualizar encima).
 
 ## Mac sin máquinas Mac
-GitHub no asigna máquinas Mac a esta cuenta (los trabajos se cancelan tras 15-30 min y llegan correos de error).
-Por eso las apps de escritorio para Mac se generan **en Linux** (`desktop/scripts/mac-zip.sh`): electron-builder crea
-la app para Apple Silicon y para Intel por separado (la «universal» y el DMG solo se pueden hacer en un Mac) y
-`rcodesign` les pone firma ad-hoc. Los **plugins** (JUCE) sí necesitan un Mac para compilarse: sus trabajos de Mac
-quedan como opcionales (Run workflow → mac) para no generar correos de error.
+Las máquinas Mac con chip Apple de GitHub (`macos-15`, arm64) no llegaban a asignarse: los trabajos se cancelaban tras 15-30 min y llegaban correos de error. La anotación de GitHub en cada trabajo lo explica: «The job was not acquired by Runner of type hosted even after multiple attempts · Due to capacity constraints, jobs targeting macOS arm64 runners may experience longer queue times». Es decir, era falta de capacidad de GitHub y no un problema de la cuenta.
+Las apps de escritorio para Mac se generan **en Linux** (`desktop/scripts/mac-zip.sh`): electron-builder crea la app para Apple Silicon y para Intel por separado (la «universal» y el DMG solo se pueden hacer en un Mac) y `rcodesign` les pone firma ad-hoc.
+Los **plugins** (JUCE) sí necesitan un Mac para compilarse: desde el 19-11-2026 usan las máquinas **Intel** de GitHub (`macos-15-intel`), que sí se asignan, y generan un binario universal (VST3, AU y Standalone).
 
 ## Actualizaciones automáticas (desde los paquetes 1.1.0)
 Las apps de Windows, Mac y Android **se actualizan solas** cuando cambia la web de la app en GitHub; no hace falta recompilar ni reinstalar.
