@@ -1,21 +1,20 @@
-/* SampledHead · Portal de apps · v15 (cada tarjeta abre sus versiones: web, Windows, Mac, Android y VST)
+/* SampledHead · Portal de apps · v16 (cada tarjeta abre sus versiones: web, Windows, Mac, Android y VST)
    Añadir una app: copia un bloque de APPS.
    Logos: cada vez que se abre el portal se lee el icono ACTUAL de cada app
    (su manifest.webmanifest o su archivo de logo). Si no se puede leer, se usa la
    copia guardada en icons/, y si tampoco, el emoji. */
 
-const VERSION = "v15";
+const VERSION = "v16";
 const BASE = "https://sampledhead-dot.github.io/";
 const MAIN_LOGO = "logo.png";
 const EYE_WHITE = "eye-white.png";
 const EYE_PUPIL = "eye-pupil.png";
 const EYE_LID = "eye-lid.png";
 const LIVE_TIMEOUT_MS = 6000;
-/* Descargas: se leen en directo de GitHub Releases. Si no se puede (sin red, límite de la API),
-   se usan estos enlaces de reserva: actualiza DL_FALLBACK cuando cambie la versión de las apps. */
+/* Descargas: se leen en directo de GitHub Releases (las 3 últimas apps-v*, caché de 2 min). Si GitHub no responde,
+   la hoja remite a la página de descargas de GitHub. */
 const GH = "https://github.com/sampledhead-dot/";
 const GH_API = "https://api.github.com/repos/sampledhead-dot/";
-const DL_FALLBACK = { tag: "apps-v1.1.1", version: "1.1.1" };
 
 const APPS = [
   { name: "SampledHead App", dl: "SampledHead-App", url: BASE + "sampledhead-app/", manifest: "manifest.webmanifest", local: "icons/sampledhead-app.png",
@@ -280,16 +279,24 @@ const KINDS = [
 ];
 
 let releaseP = null;
-function cachedJSON(key, url) {
-  try { const c = JSON.parse(sessionStorage.getItem(key) || "null"); if (c && Date.now() - c.t < 30 * 60 * 1000) return Promise.resolve(c.d); } catch (e) {}
+function cachedJSON(key, url, ttl) {
+  try { const c = JSON.parse(sessionStorage.getItem(key) || "null"); if (c && Date.now() - c.t < (ttl || 10 * 60 * 1000)) return Promise.resolve(c.d); } catch (e) {}
   return fetchNoCache(url, "json").then(d => { try { sessionStorage.setItem(key, JSON.stringify({ t: Date.now(), d })); } catch (e) {} return d; });
 }
-/* Lista de archivos de las apps de escritorio y Android: [{name, url, size}] */
+/* Lista de archivos de las apps de escritorio y Android: [{name, url, size}].
+   v16: se consulta al abrir cada hoja (caché de 2 min) y se miran las 3 últimas releases apps-v*: si una descarga aún no
+   está en la nueva (se está compilando o hubo que relanzarla) se ofrece la de la anterior. Antes se guardaba 30 min y, como
+   las releases viejas se borran, los enlaces quedaban rotos. */
 function appsRelease() {
-  if (!releaseP) releaseP = cachedJSON("sh-rel-apps", GH_API + "SH-apps/releases/latest")
-    .then(r => ({ live: true, tag: r.tag_name, assets: (r.assets || []).map(a => ({ name: a.name, url: a.browser_download_url, size: a.size })) }))
-    .catch(e => { console.warn("descargas: uso los enlaces de reserva (" + (e && e.message || e) + ")"); releaseP = null; return { live: false, tag: DL_FALLBACK.tag, assets: null }; });
-  return releaseP;
+  return cachedJSON("sh-rel-apps2", GH_API + "SH-apps/releases?per_page=6", 2 * 60 * 1000)
+    .then(list => {
+      const rels = (list || []).filter(r => /^apps-v/.test(r.tag_name) && !r.draft).slice(0, 3);
+      if (!rels.length) throw new Error("sin releases apps-v*");
+      const assets = [];
+      rels.forEach((r, i) => (r.assets || []).forEach(a => assets.push({ name: a.name, url: a.browser_download_url, size: a.size, old: i > 0, tag: r.tag_name })));
+      return { live: true, tag: rels[0].tag_name, assets };
+    })
+    .catch(e => { console.warn("descargas: no se pudo consultar GitHub (" + (e && e.message || e) + ")"); return { live: false, tag: "", assets: null }; });
 }
 function vstRelease(app) {
   return cachedJSON("sh-rel-vst-" + app.vst.repo, GH_API + app.vst.repo + "/releases?per_page=20")
@@ -353,18 +360,13 @@ async function openSheet(app) {
     if (app.only && !app.only.includes(k.id)) return;   // v14: Pop!Pads solo web y Android
     let a = null;
     if (rel.assets) a = rel.assets.filter(x => x.name.indexOf(app.dl + "-") === 0 && k.re.test(x.name) && /^\d/.test(x.name.slice(app.dl.length + 1)))[0];
-    else {
-      const suf = { win: "Windows-Setup.exe", macA: "Mac-AppleSilicon.zip", macI: "Mac-Intel.zip", apk: "Android.apk" }[k.id];
-      const n = app.dl + "-" + DL_FALLBACK.version + "-" + suf;
-      a = { name: n, url: GH + "SH-apps/releases/download/" + DL_FALLBACK.tag + "/" + n, size: 0 };
-    }
     if (a) opts.push({ ico: k.ico, t: k.t, s: k.s, url: a.url, download: true, meta: [verOf(a.name), fmtSize(a.size)].filter(Boolean).join(" · "), mine: k.os === OS, os: k.os });
   });
   opts.sort((x, y) => (y.mine ? 1 : 0) - (x.mine ? 1 : 0));
   opts.forEach(o => list.appendChild(optEl(o)));
-  state.hidden = !!opts.length && rel.live;
-  state.textContent = !opts.length ? "Esta app aún no tiene versión descargable. Usa la versión web." :
-    "No he podido consultar GitHub ahora mismo: estos enlaces son de la última versión conocida (" + DL_FALLBACK.tag + ").";
+  state.hidden = rel.live && !!opts.length;
+  state.textContent = !rel.live ? "No he podido consultar GitHub ahora mismo. Pulsa «Ver todas las descargas en GitHub» (abajo) o inténtalo en un momento." :
+    "Esta app aún no tiene versión descargable. Usa la versión web.";
   if (app.vst) await showVst(app);
 }
 async function showVst(app) {

@@ -37,8 +37,10 @@ fi
 gh release edit "$TAG" -R "$REPO" --notes "$NOTES" --latest
 for i in 1 2 3; do gh release upload "$TAG" "${FILES[@]}" -R "$REPO" --clobber && break || sleep 15; done
 
-# Las releases de versiones anteriores del programa (apps-v*) se retiran: solo queda la última para descargar
-for old in $(gh release list -R "$REPO" --limit 50 --json tagName --jq '.[].tagName' | grep '^apps-v' | grep -vx "$TAG" || true); do
+# Las releases antiguas del programa (apps-v*) se retiran, pero se conserva la ANTERIOR: mientras la nueva se completa
+# (Windows, Mac y Android suben por separado, y a veces un APK hay que relanzarlo) el portal y los enlaces ya
+# compartidos siguen encontrando cada descarga en la anterior. La lista sale de la más nueva a la más antigua.
+for old in $(gh release list -R "$REPO" --limit 50 --json tagName,createdAt --jq 'sort_by(.createdAt)|reverse|.[].tagName' | grep '^apps-v' | grep -vx "$TAG" | tail -n +2 || true); do
   echo "Retirando la release anterior $old"; gh release delete "$old" -R "$REPO" --cleanup-tag -y || true
 done
 
