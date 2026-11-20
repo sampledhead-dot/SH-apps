@@ -33,6 +33,7 @@ AJUSTE = {
     'chuleta':   {'dp': 84, 'fondo': (0.5, 0.12)},
     'spb':       {'dp': 88, 'fondo': (0.12, 0.5)},
     'fuzzhead':  {'dp': 72, 'fondo': '#D9600B'},
+    'glitchhead': {'dp': 68, 'fondo': 'borde'},
 }
 DENS = {'mdpi': 1, 'hdpi': 1.5, 'xhdpi': 2, 'xxhdpi': 3, 'xxxhdpi': 4}
 
