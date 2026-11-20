@@ -33,6 +33,7 @@ Para enviar se puede pasar `audio: AudioBuffer` en lugar de `wav` y sh-core lo c
 | editor | SampledHead Editor | pad, loop, stem, frase |
 | crazyhead | CrazyHead | loop, stem, pad, frase |
 | fuzzhead | FuzzHead | stem, loop, frase, pad |
+| glitchhead | GlitchHead | loop, stem, pad, frase |
 | spb | Sample Pack Builder | stem, loop |
 | tuner | SampledHead Tuner | stem, loop, notas |
 | tonopad | TonoPad | stem, loop, pad, notas |

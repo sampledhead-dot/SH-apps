@@ -19,7 +19,8 @@ usa el micrófono o la interfaz de audio, MIDI y descargas (WAV, ZIP…) igual q
 | `chuleta` | Chuleta Beat | Chuleta-beat |
 | `tuner` | SampledHead Tuner | Sampledhead-tuner |
 | `tonopad` | TonoPad | Tono-Pad |
-| `fuzzhead` | FuzzHead | FuzzHead *(se compila en cuanto exista el repositorio)* |
+| `fuzzhead` | FuzzHead | FuzzHead |
+| `glitchhead` | GlitchHead | GlitchHead (desde paquetes 1.3.11 / plataforma 1.0.5) |
 
 
 ## Versión de Electron y macOS mínimo (1.3.4, 19-11-2026)
@@ -48,6 +49,7 @@ usa el micrófono o la interfaz de audio, MIDI y descargas (WAV, ZIP…) igual q
 | TonoPad | ✔ | ✔ | — |
 | SampledHead Tuner | ✔ | ✔ | ✔ (repo Sampledhead-tuner, `vst/`) |
 | FuzzHead | ✔ | ✔ | ✔ (repo FuzzHead, `vst/`; el zip del plugin trae además su Standalone en tiempo real) |
+| GlitchHead | ✔ | ✔ | ✔ (repo GlitchHead, `vst/`; VST3 + AU + Standalone) |
 | Sample Pack Builder | ✔ | ✔ | — |
 | Chuleta Beat | ✔ | ✔ | — |
 

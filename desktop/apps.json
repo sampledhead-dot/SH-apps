@@ -1,5 +1,5 @@
 {
-  "wrapperVersion": "1.3.10",
+  "wrapperVersion": "1.3.11",
   "electronVersion": "45.3.4",
   "electronVersionMac": "43.8.12",
   "apps": [
@@ -134,9 +134,32 @@
         "mac",
         "android"
       ]
+    },
+    {
+      "id": "glitchhead",
+      "name": "GlitchHead",
+      "productName": "GlitchHead",
+      "repo": "GlitchHead",
+      "color": "#17130f",
+      "exclude": [
+        "vst",
+        "tests",
+        "web",
+        "dist",
+        "dsp",
+        "design",
+        "tools",
+        "build_web.js"
+      ],
+      "desc": "Tres efectos salvajes en cadena: Shred (wavesets al azar), Haze (memoria y granos) y Split (puerta partida).",
+      "platforms": [
+        "windows",
+        "mac",
+        "android"
+      ]
     }
   ],
-  "suiteVersion": "1.0.4",
+  "suiteVersion": "1.0.5",
   "plugins": [
     {
       "id": "fuzzhead-vst",
@@ -161,6 +184,14 @@
       "app": "tuner",
       "bundle": "SampledHead Tuner",
       "desc": "El afinador dentro de tu DAW."
+    },
+    {
+      "id": "glitchhead-vst",
+      "name": "GlitchHead (VST3/AU)",
+      "repo": "GlitchHead",
+      "app": "glitchhead",
+      "bundle": "GlitchHead",
+      "desc": "Shred · Haze · Split en tiempo real dentro de tu DAW."
     }
   ]
 }

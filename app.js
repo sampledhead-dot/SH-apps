@@ -4,7 +4,7 @@
    (su manifest.webmanifest o su archivo de logo). Si no se puede leer, se usa la
    copia guardada en icons/, y si tampoco, el emoji. */
 
-const VERSION = "v16";
+const VERSION = "v17";
 const BASE = "https://sampledhead-dot.github.io/";
 const MAIN_LOGO = "logo.png";
 const EYE_WHITE = "eye-white.png";
@@ -35,6 +35,8 @@ const APPS = [
     desc: "Detecta el tono y la escala de un audio y genera bancos de 16 pads afinados para SP-404MKII, Move, MPC Sample y Live.", emoji: "🎹" },
   { name: "FuzzHead", dl: "FuzzHead", vst: { repo: "FuzzHead", tag: "vst-v1.0.1", file: "FuzzHead-VST-1.0.1-Windows.zip" }, url: BASE + "FuzzHead/", manifest: "manifest.webmanifest", local: "icons/fuzzhead.png",
     desc: "Convierte tu guitarra o bajo en sintetizador: 5 motores, distorsión, bitcrush, ring mod y gated reverb.", emoji: "🎛️" },
+  { name: "GlitchHead", dl: "GlitchHead", vst: { repo: "GlitchHead", tag: "vst-v1.0.0", file: "GlitchHead-VST-1.0.0-Windows.zip" }, url: BASE + "GlitchHead/", manifest: "manifest.webmanifest", local: "icons/glitchhead.png",
+    desc: "Tres efectos salvajes en cadena: Shred trocea en wavesets, Haze crea texturas con memoria y Split parte la señal con una puerta. También VST3/AU.", emoji: "⚡" },
   /* v15: TapeHead es solo plugin (sin web propia): la tarjeta abre la hoja con el VST y el enlace a TonoPad, que lo lleva dentro */
   { name: "TapeHead", dl: "TapeHead", vstOnly: true, vst: { repo: "TapeHead", tag: "vst-v1.0.0", file: "TapeHead-VST-1.0.0-Windows.zip" }, local: "icons/tapehead.png",
     alt: { url: BASE + "Tono-Pad/", t: "Probar en TonoPad (navegador)", s: "TapeHead va dentro de TonoPad como efecto de los pads. Sin instalar nada." },
