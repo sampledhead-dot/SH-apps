@@ -39,6 +39,7 @@ El logo no se redibuja. Encima del `logo.png` se colocan tres recortes del propi
 Si se cambia el logo, hay que volver a recortar las tres capas y revisar las medidas (`EYE` en `app.js` y `.eye` en `styles.css`).
 
 ## Historial de versiones
+- sh-core 1.2.2 (21-11-2026) — la copia `.shdatos` del Editor incluye su biblioteca «Mis proyectos» (IndexedDB `shed-projects`; `OWN.editor.idb`). El resto de apps puede seguir con 1.2.1: solo cambia el Editor. Se repartirá a todas en el próximo `node sh-core/sync.js`.
 - v17 — tarjeta de **GlitchHead** (web + VST3/AU: Shred · Haze · Split). sh-core 1.2.1 (GlitchHead en «Enviar a…» y en las copias de datos).
 - v16 — descargas siempre al día: la hoja consulta GitHub al abrirse (caché de 2 min, antes 30) y mira las 3 últimas releases `apps-v*`; si una descarga aún no está en la nueva, ofrece la de la anterior. Fuera los enlaces de reserva con nombres inventados (`DL_FALLBACK`): si GitHub no responde, remite a la página de descargas. `desktop/scripts/release.sh` conserva la release anterior (antes la borraba al publicar la nueva y los enlaces abiertos o guardados daban 404).
 - v15 — tarjeta de **TapeHead** (solo plugin: `vstOnly: true` en `APPS`): la hoja no ofrece web ni instaladores; enseña «Probar en TonoPad» (`alt`) y los zips VST de Windows y Mac (VST3 + AU + Standalone) de su última release `vst-v*`; en el Mac/Windows del visitante se marca el suyo. Ayuda de instalación de VST con la ruta de Mac.
