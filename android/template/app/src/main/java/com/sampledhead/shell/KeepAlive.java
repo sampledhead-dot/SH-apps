@@ -26,7 +26,7 @@ public class KeepAlive extends Service {
                 c.setDescription("Mantiene la app abierta en segundo plano para que no se pierda lo que estás haciendo");
                 c.setShowBadge(false); nm.createNotificationChannel(c);
             }
-            Intent open = new Intent(this, MainActivity.class).setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP | Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
+            Intent open = getPackageManager().getLaunchIntentForPackage(getPackageName()); if (open == null) open = new Intent(); open.setPackage(getPackageName()).setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP | Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
             PendingIntent pi = PendingIntent.getActivity(this, 0, open, PendingIntent.FLAG_IMMUTABLE | PendingIntent.FLAG_UPDATE_CURRENT);
             Notification n = new Notification.Builder(this, CH)
                 .setSmallIcon(android.R.drawable.ic_media_play)

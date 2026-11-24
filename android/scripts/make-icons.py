@@ -34,6 +34,7 @@ AJUSTE = {
     'spb':       {'dp': 88, 'fondo': (0.12, 0.5)},
     'fuzzhead':  {'dp': 72, 'fondo': '#D9600B'},
     'glitchhead': {'dp': 68, 'fondo': 'borde'},
+    'suite':     {'dp': 96, 'fondo': 'borde', 'src': 'icon-512.png'},   # app única SampledHead (Android): el icono del portal
 }
 DENS = {'mdpi': 1, 'hdpi': 1.5, 'xhdpi': 2, 'xxhdpi': 3, 'xxxhdpi': 4}
 
@@ -63,8 +64,8 @@ def color_de(im, how):
 
 
 def capas(id_, size_px):
-    src = Image.open(os.path.join(ROOT, 'desktop', 'icons', id_ + '.png')).convert('RGBA')
     aj = AJUSTE[id_]
+    src = Image.open(os.path.join(ROOT, aj['src']) if 'src' in aj else os.path.join(ROOT, 'desktop', 'icons', id_ + '.png')).convert('RGBA')
     bg = color_de(src, aj['fondo'])
     s = round(size_px * aj['dp'] / 108)
     fg = Image.new('RGBA', (size_px, size_px), (0, 0, 0, 0))
@@ -136,6 +137,7 @@ def preview(path):
 
 
 if __name__ == '__main__':
-    for id_ in AJUSTE:
+    only = [a for a in sys.argv[1:] if not a.startswith('--') and not a.endswith('.png')]
+    for id_ in (only or AJUSTE):
         print(id_, 'fondo #%02X%02X%02X' % write(id_))
     if '--preview' in sys.argv: preview(sys.argv[sys.argv.index('--preview') + 1])

@@ -354,6 +354,63 @@ jobs:
           path: out-android/*.apk
           if-no-files-found: error
 
+  build-android-suite:
+    # App única «SampledHead» para Android: todas las apps dentro (menos Pop!Pads), como la plataforma de Windows y Mac
+    needs: setup
+    if: needs.setup.outputs.android == 'true' && needs.setup.outputs.suite == 'true'
+    name: Android · SampledHead (app única)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Descargar las apps
+        run: bash desktop/scripts/clone-all.sh "$RUNNER_TEMP/srcs"
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+      - name: Preparar proyecto Android
+        run: node android/scripts/prepare-suite.js "$RUNNER_TEMP/srcs" "$RUNNER_TEMP/android" "$((1000000 + ${{ github.run_number }}))"
+      - name: Clave de firma
+        env:
+          KS: ${{ secrets.SH_ANDROID_KEYSTORE }}
+          PW: ${{ secrets.SH_ANDROID_PASSWORD }}
+        run: |
+          if [ -n "$KS" ] && [ -n "$PW" ]; then
+            # Se limpian espacios y saltos de línea que se cuelan al copiar y pegar los secretos.
+            PW="$(printf '%s' "$PW" | tr -d '\r\n' | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')"
+            printf '%s' "$KS" | tr -d '[:space:]' > "$RUNNER_TEMP/ks.b64"
+            echo "Diagnóstico (sin revelar los secretos): texto de la clave ${#KS} caracteres -> $(wc -c < "$RUNNER_TEMP/ks.b64") sin espacios (debe ser 5764) · contraseña ${#PW} caracteres (debe ser 28)"
+            if ! base64 -d "$RUNNER_TEMP/ks.b64" > "$RUNNER_TEMP/ks.jks" 2>/dev/null; then
+              echo "::error title=Clave Android::SH_ANDROID_KEYSTORE no es un texto base64 válido. Pega TODO el contenido de SH_ANDROID_KEYSTORE.txt (una sola línea de 5764 caracteres, termina en «xA=»). ¿Están los dos secretos intercambiados?"; exit 1
+            fi
+            echo "Huella del archivo de clave: $(sha256sum "$RUNNER_TEMP/ks.jks" | cut -c1-16) (la correcta empieza por 2e139c92a9ff43e8)"
+            if ! keytool -list -keystore "$RUNNER_TEMP/ks.jks" -storetype PKCS12 -storepass "$PW" -alias sampledhead >/dev/null 2>&1; then
+              echo "::error title=Clave Android::La clave no se abre con SH_ANDROID_PASSWORD. Revisa que la contraseña sea exactamente el contenido de SH_ANDROID_PASSWORD.txt (28 caracteres) y que SH_ANDROID_KEYSTORE sea el de SH_ANDROID_KEYSTORE.txt completo."; exit 1
+            fi
+            echo "SH_KEYSTORE=$RUNNER_TEMP/ks.jks" >> "$GITHUB_ENV"; echo "SH_KEYSTORE_PASSWORD=$PW" >> "$GITHUB_ENV"
+            echo "Firmado con la clave permanente (secretos): $(keytool -list -v -keystore "$RUNNER_TEMP/ks.jks" -storepass "$PW" -alias sampledhead 2>/dev/null | grep 'SHA256:' | head -1 | xargs)"
+          else
+            echo "::warning title=Android::Sin los secretos SH_ANDROID_KEYSTORE/SH_ANDROID_PASSWORD: se firma con la clave PROVISIONAL."
+            echo "SH_KEYSTORE=$GITHUB_WORKSPACE/android/keystore/provisional.jks" >> "$GITHUB_ENV"; echo "SH_KEYSTORE_PASSWORD=sampledhead-provisional" >> "$GITHUB_ENV"
+          fi
+      - name: Compilar APK
+        working-directory: ${{ runner.temp }}/android
+        run: |
+          chmod +x gradlew
+          for i in 1 2 3; do ./gradlew assembleRelease --no-daemon -q && break || { echo "Reintento $i"; sleep 20; }; done
+          V=$(node -e 'const l=require(process.env.GITHUB_WORKSPACE+"/desktop/apps.json");console.log(l.androidVersion||l.wrapperVersion)')
+          mkdir -p "$GITHUB_WORKSPACE/out-android"
+          cp app/build/outputs/apk/release/app-release.apk "$GITHUB_WORKSPACE/out-android/SampledHead-$V-Android.apk"
+          ls -la "$GITHUB_WORKSPACE/out-android"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: suite-android
+          path: out-android/*.apk
+          if-no-files-found: error
+
   release-windows:
     needs: [setup, build-windows, build-suite-windows]
     # no publica si la ejecución se cancela; sí aunque falle alguna app suelta
@@ -395,7 +452,7 @@ jobs:
         run: bash repo/desktop/scripts/release.sh "*.zip"
 
   release-android:
-    needs: [setup, build-android]
+    needs: [setup, build-android, build-android-suite]
     # no publica si la ejecución se cancela; sí aunque falle alguna app suelta
     if: ${{ !cancelled() && needs.setup.result == 'success' && needs.setup.outputs.android == 'true' && (github.event_name != 'workflow_dispatch' || github.event.inputs.publicar == 'true') }}
     runs-on: ubuntu-latest

@@ -67,3 +67,8 @@ Desde la 1.3.0, si existe `SHAndroid.outBegin` (shell Android ≥ 1.4.0):
 2. `SHAndroid.sendTo(appId, nombres)` abre la otra app con el intent `com.sampledhead.RECIBIR` y le da permiso de lectura (ContentProvider `<paquete>.bandeja`).
 3. La app destino copia los archivos a `filesDir/bandeja`, avisa con el evento `sh-bandeja` y `SH.bridge.inbox` los mete en su buzón (`/__bandeja__/<nombre>` → IndexedDB) y los borra.
 Si la app destino no está instalada, el envío avisa y las hojas «Enviar a…» la muestran como «No instalada». Las apps web y de escritorio siguen igual.
+
+## App única SampledHead para Android — sh-core 1.4.0 (24-11-2026)
+Si existe `window.SHSuite` (APK `com.sampledhead.suite`), todas las apps comparten origen: la bandeja es la de la web
+(IndexedDB, como en el navegador) y además `SHSuite.notify(to)` avisa a la app destino si está abierta; `SH.open(id)` llama a
+`SHSuite.open(id)` (cambia de vista dentro de la app). `SH.isSuite` = true y `SH.isAndroid` = true.

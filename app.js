@@ -1,10 +1,10 @@
-/* SampledHead · Portal de apps · v16 (cada tarjeta abre sus versiones: web, Windows, Mac, Android y VST)
+/* SampledHead · Portal de apps · v18: la tarjeta «SampledHead» (todas las apps en una: Windows, Mac y Android) abre su hoja de descargas · v16 (cada tarjeta abre sus versiones: web, Windows, Mac, Android y VST)
    Añadir una app: copia un bloque de APPS.
    Logos: cada vez que se abre el portal se lee el icono ACTUAL de cada app
    (su manifest.webmanifest o su archivo de logo). Si no se puede leer, se usa la
    copia guardada en icons/, y si tampoco, el emoji. */
 
-const VERSION = "v17";
+const VERSION = "v18";
 const BASE = "https://sampledhead-dot.github.io/";
 const MAIN_LOGO = "logo.png";
 const EYE_WHITE = "eye-white.png";
@@ -329,6 +329,10 @@ function optEl(o) {
 }
 
 let sheetApp = null;
+/* v18: la app que lleva todas las demás dentro (Windows y Mac: plataforma; Android: app única). Sus archivos se llaman
+   SampledHead-<versión>-Windows-Setup.exe / -Mac-*.zip / -Android.apk. */
+const SUITE = { name: "SampledHead (todas las apps)", dl: "SampledHead", emoji: "🎛️",
+  desc: "Todas las apps en una sola: eliges cuáles tener, pasas de una a otra al momento y cada una se actualiza sola. En Windows y Mac también instala los plugins VST/AU. Pop!Pads va aparte." };
 async function openSheet(app) {
   step("abrir hoja de " + app.name);
   sheetApp = app;
@@ -397,7 +401,7 @@ function initSheet() {
   dlg.addEventListener("click", e => { if (e.target === dlg) closeSheet(); });   // clic fuera
   const fromHash = () => {
     const m = location.hash.match(/^#app=([\w-]+)/);
-    const app = m && APPS.filter(a => slug(a) === m[1].toLowerCase())[0];
+    const app = m && APPS.concat([SUITE]).filter(a => slug(a) === m[1].toLowerCase())[0];
     if (app && sheetApp !== app) openSheet(app);
   };
   window.addEventListener("hashchange", fromHash);
@@ -415,6 +419,8 @@ try {
   document.getElementById("year").textContent = new Date().getFullYear();
   document.getElementById("version").textContent = VERSION;
   document.getElementById("report-btn").addEventListener("click", () => downloadReport("botón manual"));
+  const suiteLink = document.querySelector("a.suite");
+  if (suiteLink) suiteLink.addEventListener("click", e => { e.preventDefault(); openSheet(SUITE); });
   step("hoja de descargas");
   initSheet();
   step("instalación");

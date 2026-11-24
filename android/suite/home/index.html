@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>SampledHead</title>
+<style>
+:root{--orange:#d65f00;--paper:#f7f1f1;--ink:#111}
+*{box-sizing:border-box;margin:0;padding:0}
+body{min-height:100vh;background:var(--orange);color:var(--ink);font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;line-height:1.45;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent}
+.hero{text-align:center;padding:18px 16px 2px}
+.hero img{width:min(46vw,190px);height:auto;animation:float 3.6s ease-in-out infinite alternate;filter:drop-shadow(0 6px 0 rgba(0,0,0,.18))}
+@keyframes float{to{transform:translateY(-6px)}}
+.tag{display:inline-block;margin-top:6px;background:var(--ink);color:var(--paper);font-weight:800;letter-spacing:.06em;padding:3px 11px;border-radius:6px;transform:rotate(-1.5deg);font-size:13px}
+main{max-width:760px;margin:0 auto;padding:14px 14px 30px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:18px}
+.card{position:relative;width:100%;font:inherit;text-align:left;display:flex;gap:12px;align-items:center;padding:13px;color:inherit;background:var(--paper);border:3px solid var(--ink);border-radius:14px;box-shadow:5px 5px 0 var(--ink);transition:transform .1s,box-shadow .1s}
+.card:nth-child(odd){transform:rotate(-.5deg)}.card:nth-child(even){transform:rotate(.5deg)}
+.card:active{transform:translate(4px,4px);box-shadow:1px 1px 0 var(--ink)}
+.card img{flex:0 0 58px;width:58px;height:58px;border:3px solid var(--ink);border-radius:13px;background:#fff;object-fit:cover}
+.card h2{font-size:17px;line-height:1.15;margin-bottom:2px}.card p{font-size:13px;color:#3b2a1e}
+.badges{position:absolute;top:-11px;right:10px;display:flex;gap:6px}
+.bd{font-size:11px;font-weight:800;padding:2px 9px;border:2px solid var(--ink);border-radius:999px;background:var(--paper)}
+.bd.on{background:#2bb673;color:#fff}.bd.up{background:#ffd60a}.bd.x{cursor:pointer}
+h3.sec{margin:26px 0 10px;display:inline-block;background:var(--ink);color:var(--paper);padding:3px 12px;border-radius:6px;transform:rotate(-1deg);font-size:14px;letter-spacing:.05em}
+.tools{display:flex;flex-wrap:wrap;gap:10px}
+.btn{font:700 14px system-ui,sans-serif;background:var(--paper);border:3px solid var(--ink);border-radius:12px;padding:9px 13px;box-shadow:4px 4px 0 var(--ink);color:var(--ink)}
+.btn:active{transform:translate(3px,3px);box-shadow:1px 1px 0 var(--ink)}
+.btn.pri{background:var(--ink);color:var(--paper)}
+.btn.sm{font-size:12.5px;padding:5px 9px;box-shadow:3px 3px 0 var(--ink);border-width:2px}
+.btn:disabled{opacity:.5}
+select.btn{appearance:auto}
+footer{text-align:center;color:var(--paper);font-size:12.5px;padding:8px 0 22px;opacity:.9}
+.note{font-size:13px;color:#3b2a1e}
+.light{color:var(--paper)}
+.ov{position:fixed;inset:0;background:rgba(0,0,0,.55);display:none;align-items:center;justify-content:center;padding:12px;z-index:10}
+.ov.on{display:flex}
+.box{background:var(--paper);border:3px solid var(--ink);border-radius:16px;box-shadow:7px 7px 0 var(--ink);width:min(620px,100%);max-height:calc(100vh - 24px);overflow:auto;padding:16px 16px}
+.box h2{font-size:21px;margin-bottom:4px}.box .sub{font-size:14px;color:#3b2a1e;margin-bottom:8px}
+.box h4{margin:14px 0 6px;font-size:13px;letter-spacing:.05em;text-transform:uppercase}
+.box label{display:flex;gap:10px;align-items:center;padding:7px 6px;border-radius:10px}
+.box label img{width:36px;height:36px;border:2px solid var(--ink);border-radius:9px;flex:none}
+.box label b{display:block;font-size:15px}.box label small{color:#3b2a1e;font-size:12.5px}
+.box input[type=checkbox]{width:22px;height:22px;accent-color:var(--orange);flex:none}
+.row{display:flex;gap:10px;flex-wrap:wrap;justify-content:flex-end;margin-top:14px}
+#dlog{font-size:13px;margin-top:8px;white-space:pre-line}
+.ok{color:#0a7a43}.ko{color:#b3261e}
+</style>
+</head>
+<body>
+<div class="hero"><img src="logo.png" alt="SampledHead"><br><span class="tag">APPS PARA BEATMAKERS</span></div>
+<main>
+  <div class="grid" id="grid"></div>
+  <p class="note light" style="margin-top:14px">Vuelve aquí con el asa <b>SH</b> del borde izquierdo o con «atrás». Las apps abiertas siguen funcionando mientras usas otra, y lo que envías con «Enviar a…» llega al momento.</p>
+  <h3 class="sec">AJUSTES</h3>
+  <div class="tools">
+    <button class="btn" id="bpick">Elegir apps</button>
+    <button class="btn" id="bdatos">Traer mis datos</button>
+    <button class="btn" id="bupd">Buscar actualizaciones</button>
+    <label class="btn" style="display:inline-flex;align-items:center;gap:6px">Abiertas a la vez <select id="bmax" style="font:inherit;border:0;background:transparent"><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option></select></label>
+    <button class="btn" id="brep">Descargar informe (.txt)</button>
+  </div>
+  <p class="note light" style="margin-top:10px" id="updtxt"></p>
+</main>
+<footer id="foot">SampledHead</footer>
+
+<div id="pick" class="ov"><div class="box">
+  <h2 id="ptitle">¿Qué apps quieres?</h2>
+  <div class="sub">Todas vienen dentro de SampledHead; aquí eliges cuáles ver en el inicio. Puedes cambiarlo cuando quieras.</div>
+  <div id="papps"></div>
+  <div id="ploose"></div>
+  <div class="row"><button class="btn" id="pall">Marcar todas</button><button class="btn" id="pcancel">Cancelar</button><button class="btn pri" id="pok">Listo</button></div>
+</div></div>
+
+<div id="datos" class="ov"><div class="box">
+  <h2>Traer mis datos</h2>
+  <div class="sub">Kits, presets, proyectos y ajustes. Se <b>suman</b> a lo que ya tengas aquí: no se borra ni se sustituye nada (lo que tenga el mismo nombre y sea distinto se guarda como «(copia)»).</div>
+  <h4>De las apps sueltas de este móvil</h4>
+  <div id="dloose" class="note"></div>
+  <p style="margin:8px 0"><button class="btn pri" id="dpull">Traer de las apps sueltas</button></p>
+  <h4>De copias .shdatos</h4>
+  <p class="note">De la versión web o de otro dispositivo: en cada app, «⇄ Apps» → «Copia de tus datos» → «Guardar copia» (en SampledHead App: menú Más → «Copia de tus datos»). Puedes elegir varias a la vez.</p>
+  <p style="margin:8px 0"><button class="btn" id="dfiles">Elegir copias .shdatos</button><input type="file" id="dfin" accept=".shdatos" multiple hidden></p>
+  <div id="dlog"></div>
+  <div class="row"><button class="btn" id="dclose">Cerrar</button></div>
+</div></div>
+
+<script src="sh-core.js"></script>
+<script>
+const $ = s => document.querySelector(s);
+const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const N = window.SHSuite || null;   // el puente de la app única (en el navegador de pruebas no existe)
+let S = null;
+function state() { try { return JSON.parse(N.state()); } catch (e) { console.error(e); return { version: '?', apps: [], max: 3, first: false }; } }
+const UPD = { 'lista': 'actualización lista', 'aplicada': 'actualizada', 'buscando': 'buscando…', 'error': 'sin conexión', 'vuelta atrás': 'versión anterior' };
+function render() {
+  S = state();
+  const g = $('#grid'); g.innerHTML = '';
+  const apps = S.apps.filter(a => a.chosen);
+  if (!apps.length) g.innerHTML = '<p class="note light">No has elegido ninguna app. Pulsa «Elegir apps».</p>';
+  apps.forEach(a => {
+    const c = document.createElement('div'); c.className = 'card'; c.setAttribute('role', 'button'); c.tabIndex = 0;
+    let b = '';
+    if (a.upd === 'lista') b += '<span class="bd up" data-u>Actualizar</span>';
+    else if (a.upd === 'aplicada') b += '<span class="bd up">actualizada</span>';
+    else if (a.upd === 'buscando') b += '<span class="bd">buscando…</span>';
+    if (a.open) b += '<span class="bd on">abierta</span><span class="bd x" data-x>cerrar</span>';
+    c.innerHTML = '<img src="icons/' + a.id + '.png" alt=""><div><h2>' + esc(a.name) + '</h2><p>' + esc(a.desc) + '</p></div>' + (b ? '<span class="badges">' + b + '</span>' : '');
+    c.onclick = e => {
+      if (e.target.hasAttribute('data-x')) { e.stopPropagation(); N.close(a.id); setTimeout(render, 150); return; }
+      if (e.target.hasAttribute('data-u')) { e.stopPropagation(); N.applyUpdate(a.id); setTimeout(render, 150); return; }
+      N.open(a.id);
+    };
+    g.appendChild(c);
+  });
+  $('#bmax').value = String(S.max);
+  const pend = S.apps.filter(a => a.chosen && a.upd === 'lista').map(a => a.name), done = S.apps.filter(a => a.chosen && a.upd === 'aplicada').map(a => a.name);
+  $('#updtxt').textContent = pend.length ? 'Actualización lista para ' + pend.join(', ') + ': pulsa «Actualizar» en su tarjeta (guarda antes lo que estés haciendo) o se aplicará al cerrarla.' : done.length ? 'Actualizadas: ' + done.join(', ') + '.' : '';
+  $('#foot').textContent = 'SampledHead para Android v' + S.version + ' · By SampledHead';
+}
+window.addEventListener('sh-estado', render);
+document.addEventListener('visibilitychange', () => { if (!document.hidden) render(); });
+
+function openPick(first) {
+  $('#ptitle').textContent = first ? '¡Bienvenido a SampledHead! ¿Qué apps quieres?' : 'Elegir apps';
+  $('#pcancel').hidden = !!first;
+  const pa = $('#papps'); pa.innerHTML = '';
+  S.apps.forEach(a => { const l = document.createElement('label'); l.innerHTML = '<input type="checkbox" data-a="' + a.id + '"' + (a.chosen ? ' checked' : '') + '><img src="icons/' + a.id + '.png" alt=""><span><b>' + esc(a.name) + '</b><small>' + esc(a.desc) + '</small></span>'; pa.appendChild(l); });
+  const loose = S.apps.filter(a => a.loose);
+  $('#ploose').innerHTML = first && loose.length ? '<h4>Tus apps sueltas</h4><label><input type="checkbox" id="pimp" checked><span><b>Traer mis kits, presets y proyectos</b><small>De ' + loose.map(a => esc(a.name)).join(', ') + '. Se suman; no se borra nada.</small></span></label>' : '';
+  $('#pick').classList.add('on');
+}
+$('#pall').onclick = () => document.querySelectorAll('#papps input').forEach(c => c.checked = true);
+$('#pcancel').onclick = () => $('#pick').classList.remove('on');
+$('#pok').onclick = () => {
+  const ids = [...document.querySelectorAll('#papps input')].filter(c => c.checked).map(c => c.dataset.a);
+  if (!ids.length) { alert('Elige al menos una app.'); return; }
+  N.choose(ids.join(',')); $('#pick').classList.remove('on');
+  const imp = $('#pimp'); render();
+  if (imp && imp.checked) { openDatos(); N.pullLegacy(); }
+};
+$('#bpick').onclick = () => openPick(false);
+
+// ---------------- datos
+const dlog = [];
+function logD(t, cls) { dlog.push('<span class="' + (cls || '') + '">' + esc(t) + '</span>'); $('#dlog').innerHTML = dlog.join('<br>'); }
+function openDatos() {
+  S = state(); const loose = S.apps.filter(a => a.loose);
+  $('#dloose').innerHTML = loose.length ? 'Encontradas: ' + loose.map(a => esc(a.name) + (a.export ? '' : ' <span class="ko">(antigua: actualízala desde el portal o usa una copia .shdatos)</span>')).join(', ') + '.<br>Cada app se abrirá un momento para preparar su copia y volverá aquí sola.' : 'No hay apps sueltas de Sampled Head en este móvil.';
+  $('#dpull').disabled = !loose.some(a => a.export) || S.legacyBusy;
+  $('#datos').classList.add('on');
+}
+function resumen(r) { return r.nuevos + ' nuevo' + (r.nuevos === 1 ? '' : 's') + (r.copias ? ', ' + r.copias + ' como «(copia)»' : '') + (r.iguales ? ', ' + r.iguales + ' ya estaba' + (r.iguales === 1 ? '' : 'n') : '') + (r.ajustes ? ', ' + r.ajustes + ' ajuste' + (r.ajustes === 1 ? '' : 's') : ''); }
+async function applyCopy(ab, label) {
+  let app;
+  try { app = SH.backup.parse(ab).data.app; } catch (e) { logD('✕ ' + label + ': no es una copia .shdatos', 'ko'); return false; }
+  const a = S.apps.find(x => x.id === app); if (!a) { logD('✕ ' + label + ': es de una app que no está aquí (' + app + ')', 'ko'); return false; }
+  try {
+    if (a.open) N.close(app);                         // la app se cierra para poder escribir en su almacenamiento
+    await new Promise(r => setTimeout(r, 300));
+    const r = await SH.backup.restore(app, ab);
+    logD('✔ ' + a.name + ': ' + resumen(r), 'ok'); return true;
+  } catch (e) { logD('✕ ' + a.name + ': ' + (e.message || e), 'ko'); return false; }
+}
+let applying = false;
+async function pullNative() {
+  if (applying) return; applying = true;
+  try {
+    const names = JSON.parse(N.datosList() || '[]');
+    for (const n of names) {
+      try { const r = await fetch('/__datos__/' + encodeURIComponent(n), { cache: 'no-store' }); if (r.ok) await applyCopy(await r.arrayBuffer(), n); }
+      catch (e) { logD('✕ ' + n + ': ' + (e.message || e), 'ko'); }
+      N.datosDone(n);
+    }
+    const ll = JSON.parse(N.legacyLog() || '[]'); ll.forEach(t => { if (!dlog.some(x => x.indexOf(esc(t)) >= 0)) logD(t); });
+  } finally { applying = false; render(); if ($('#datos').classList.contains('on')) openDatos(); }
+}
+window.addEventListener('sh-datos', pullNative);
+$('#bdatos').onclick = () => { openDatos(); pullNative(); };
+$('#dclose').onclick = () => $('#datos').classList.remove('on');
+$('#dpull').onclick = () => { $('#dpull').disabled = true; logD('Pidiendo los datos a las apps sueltas…'); N.pullLegacy(); };
+$('#dfiles').onclick = () => $('#dfin').click();
+$('#dfin').onchange = async e => {
+  const fl = [...e.target.files]; e.target.value = ''; if (!fl.length) return;
+  for (const f of fl) await applyCopy(await f.arrayBuffer(), f.name);
+  render();
+};
+
+$('#bupd').onclick = () => { N.updates(); setTimeout(render, 200); };
+$('#bmax').onchange = e => { N.setMax(+e.target.value); setTimeout(render, 200); };
+$('#brep').onclick = () => N.report();
+window.addEventListener('error', e => console.error('[inicio] ' + e.message));
+if (N) { render(); if (S.first) openPick(true); pullNative(); }
+else document.body.insertAdjacentHTML('beforeend', '<p class="note light" style="text-align:center">Esta página es el inicio de la app SampledHead para Android.</p>');
+</script>
+</body>
+</html>

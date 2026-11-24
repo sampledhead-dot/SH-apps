@@ -73,6 +73,7 @@ public class MainActivity extends Activity {
     Updater upd;                 // actualización del contenido (la web) desde GitHub
     boolean startOk = false;      // la versión en uso ya ha arrancado bien
     boolean checking = false;
+    boolean pageReady = false; String exportTo = null;   // 1.5.0: copia de datos pedida por la app única SampledHead
 
     static class Download { Uri uri; OutputStream out; String name; long bytes; }
 
@@ -205,8 +206,33 @@ public class MainActivity extends Activity {
             if (fs != null) { Arrays.sort(fs); for (File f : fs) { if (!f.getName().endsWith(".shitem")) continue; if (b.length() > 1) b.append(','); b.append('"').append(f.getName()).append('"'); } }
             return b.append("]").toString();
         }
+        /** 1.5.0: copia .shdatos lista (en la bandeja de salida) → a la app única que la pidió. */
+        @JavascriptInterface public void dataSend(String name) { sendToSuite(name, null); }
+        @JavascriptInterface public void dataError(String msg) { sendToSuite(null, msg); }
         @JavascriptInterface public void inboxDone(String names) { for (String n : names.split(",")) { n = n.trim(); if (n.isEmpty() || n.contains("/")) continue; new File(inboxDir(), n).delete(); } }
     }
+    void sendToSuite(String name, String err) {
+        String pkg = exportTo != null ? exportTo : "com.sampledhead.suite"; exportTo = null;
+        Intent i = new Intent("com.sampledhead.RECIBIR").setPackage(pkg).addCategory(Intent.CATEGORY_DEFAULT);
+        i.putExtra("kind", "datos"); i.putExtra("from", getString(R.string.app_id)); if (err != null) i.putExtra("error", err);
+        if (name != null && !name.contains("/")) { i.setClipData(android.content.ClipData.newRawUri("SampledHead", Uri.parse("content://" + getPackageName() + ".bandeja/" + name))); i.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION); }
+        i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        step(err == null ? "Copia de datos enviada a SampledHead" : "Copia de datos no enviada: " + err);
+        ui.post(() -> { try { startActivity(i); } catch (Exception e) { log("error", "copia a SampledHead: " + e); toast("No se pudo devolver la copia a SampledHead"); } });
+    }
+    static final String EXPORT_JS = "(function(){var me='__ME__',t0=Date.now();function b64(u){var s='';for(var i=0;i<u.length;i+=32768)s+=String.fromCharCode.apply(null,u.subarray(i,i+32768));return btoa(s);}" +
+        "function go(){if(!(window.SH&&SH.backup)){if(Date.now()-t0<15000)return setTimeout(go,300);return SHAndroid.dataError('esta versión no puede hacer copia de datos');}" +
+        "if(!SH.backup.owned(me))return SHAndroid.dataError('esta app no guarda datos propios');" +
+        "SH.backup.export(me).then(function(b){return b.arrayBuffer()}).then(function(ab){var u=new Uint8Array(ab),id=SHAndroid.outBegin();if(id<0)throw new Error('no se pudo preparar la copia');" +
+        "for(var i=0;i<u.length;i+=393216)SHAndroid.chunk(id,b64(u.subarray(i,i+393216)));var nm=SHAndroid.outEnd(id);if(!nm)throw new Error('no se pudo preparar la copia');SHAndroid.dataSend(nm);})" +
+        ".catch(function(e){SHAndroid.dataError(String(e&&e.message||e))});}go();})();";
+    void maybeExport(Intent in) {
+        if (in == null || !"com.sampledhead.EXPORTAR".equals(in.getAction())) return;
+        String to = in.getStringExtra("to"); exportTo = to != null && to.startsWith("com.sampledhead.") ? to : "com.sampledhead.suite";
+        step("La app única SampledHead pide la copia de datos"); toast("Preparando tus datos para SampledHead…");
+        if (pageReady) runExport();
+    }
+    void runExport() { if (exportTo == null || web == null) return; web.evaluateJavascript(EXPORT_JS.replace("__ME__", getString(R.string.app_id)), null); }
     File inboxDir() { File d = new File(getFilesDir(), "bandeja"); d.mkdirs(); return d; }
     /** Intent para abrir la app de Sampled Head «appId» si está instalada. */
     Intent target(String appId) {
@@ -237,7 +263,7 @@ public class MainActivity extends Activity {
                 if (web != null) web.evaluateJavascript("try{window.dispatchEvent(new Event('sh-bandeja'))}catch(e){}", null); });
         }).start();
     }
-    @Override protected void onNewIntent(Intent i) { super.onNewIntent(i); setIntent(i); receive(i); }
+    @Override protected void onNewIntent(Intent i) { super.onNewIntent(i); setIntent(i); receive(i); maybeExport(i); }
     static String safeName(String n) { n = n == null || n.trim().isEmpty() ? "archivo" : n.trim(); return n.replaceAll("[\\\\/:*?\"<>|]", "_"); }
     void toast(String s) { ui.post(() -> Toast.makeText(this, s, Toast.LENGTH_LONG).show()); }
 
@@ -327,6 +353,7 @@ public class MainActivity extends Activity {
             @Override public void onPageFinished(WebView v, String url) {
                 if (!WebViewFeature.isFeatureSupported(WebViewFeature.DOCUMENT_START_SCRIPT)) v.evaluateJavascript(INJECT, null);
                 step("Página cargada: " + v.getTitle());
+                if (!pageReady) { pageReady = true; if (exportTo != null) ui.postDelayed(MainActivity.this::runExport, 600); }
                 if (!startOk && upd.usingDownloaded()) ui.postDelayed(() -> { if (web == null || startOk) return;
                     web.evaluateJavascript("document.body?document.body.querySelectorAll('*').length:0", n -> { int k = 0; try { k = Integer.parseInt(n.replaceAll("[^0-9]", "")); } catch (Exception ignored) {}
                         if (k < 4) rollbackAndReload("la página sale vacía"); else startOk = true; }); }, 3500);
@@ -379,7 +406,7 @@ public class MainActivity extends Activity {
             getOnBackInvokedDispatcher().registerOnBackInvokedCallback(OnBackInvokedDispatcher.PRIORITY_DEFAULT, this::goBack);
 
         if (state != null) web.restoreState(state); else web.loadUrl(START);
-        if (state == null) receive(getIntent());
+        if (state == null) { receive(getIntent()); maybeExport(getIntent()); }
         step("Cargando " + START);
         ui.postDelayed(() -> checkUpdates(false), 8000);
     }

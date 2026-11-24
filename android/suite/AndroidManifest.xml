@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- SampledHead para Android · app única (todas las apps dentro). La prepara android/scripts/prepare-suite.js. -->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+    <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <!-- para ver las apps sueltas de Sampled Head instaladas y pedirles sus datos -->
+    <queries>
+        <intent><action android:name="com.sampledhead.EXPORTAR" /></intent>
+        <intent><action android:name="com.sampledhead.RECIBIR" /></intent>
+<!--PAQUETES-->
+    </queries>
+    <application
+        android:label="@string/app_name"
+        android:icon="@mipmap/ic_launcher"
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:theme="@style/AppTheme"
+        android:hardwareAccelerated="true"
+        android:largeHeap="true"
+        android:allowBackup="true">
+        <activity
+            android:name=".SuiteActivity"
+            android:exported="true"
+            android:launchMode="singleTask"
+            android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|keyboardHidden|keyboard|uiMode|density"
+            android:windowSoftInputMode="adjustResize">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+            <!-- copias de datos que mandan las apps sueltas -->
+            <intent-filter>
+                <action android:name="com.sampledhead.RECIBIR" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity>
+        <service android:name=".KeepAlive" android:exported="false" android:foregroundServiceType="mediaPlayback" />
+        <provider
+            android:name=".OutboxProvider"
+            android:authorities="${applicationId}.bandeja"
+            android:exported="false"
+            android:grantUriPermissions="true" />
+    </application>
+</manifest>
