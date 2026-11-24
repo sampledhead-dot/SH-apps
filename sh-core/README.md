@@ -72,3 +72,12 @@ Si la app destino no está instalada, el envío avisa y las hojas «Enviar a…�
 Si existe `window.SHSuite` (APK `com.sampledhead.suite`), todas las apps comparten origen: la bandeja es la de la web
 (IndexedDB, como en el navegador) y además `SHSuite.notify(to)` avisa a la app destino si está abierta; `SH.open(id)` llama a
 `SHSuite.open(id)` (cambia de vista dentro de la app). `SH.isSuite` = true y `SH.isAndroid` = true.
+
+## Menú común «☰ Menú» — sh-core 1.5.0 (24-11-2026)
+Petición del usuario: el menú «Más» del sampler estaba desordenado y cada app ordenaba a su manera guardar, exportar y
+proyectos. `SH.ui.menu(opts)` pinta el mismo menú lateral en todas las apps, con secciones desplegables siempre en este orden:
+**Proyecto · Importar · Exportar · Otras apps · Copia de tus datos · Ajustes · Ayuda**. Cada app pasa sus elementos
+(`click: '#botón'` pulsa un botón que ya existía, `run: fn`, `node: '#bloque'` mueve un bloque tal cual, `title: '…'` separador);
+«Otras apps» (enviar, recibido con su número, abrir otra app) y «Copia de tus datos» los pone sh-core. Si la app usa
+`SH.ui.dock`, sus opciones pasan al menú y no sale el botón flotante «⇄ Apps». `SH.report` = informe .txt común
+(`install({me, version, options})`, `download()`). Botón: el de la app (`button: '#id'`) o `button: 'auto'` (☰ fijo arriba a la derecha).
