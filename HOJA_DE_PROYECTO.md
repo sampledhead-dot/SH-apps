@@ -39,6 +39,7 @@ El logo no se redibuja. Encima del `logo.png` se colocan tres recortes del propi
 Si se cambia el logo, hay que volver a recortar las tres capas y revisar las medidas (`EYE` en `app.js` y `.eye` en `styles.css`).
 
 ## Historial de versiones
+- Android shell 1.4.0 + sh-core 1.3.0 (24-11-2026) — envío directo entre apps Android instaladas: `OutboxProvider` (sirve los `.shitem` salientes), intent `com.sampledhead.RECIBIR` (actividad `singleTask`, copia a `filesDir/bandeja`), métodos `outBegin/outEnd/hasApp/sendTo/openApp/inboxList/inboxDone` y ruta `/__bandeja__/`. Antes «Enviar a…» abría la web en Chrome y la otra app no recibía nada. Segundo plano: servicio en primer plano `KeepAlive` (notificación mínima «Abierta en segundo plano») y prioridad de renderizado importante para que Android no cierre la app al cambiar a otra. sh-core 1.3.0 repartido a las 9 apps; compilación `apps-v1.4.0`.
 - sh-core 1.2.2 (21-11-2026) — la copia `.shdatos` del Editor incluye su biblioteca «Mis proyectos» (IndexedDB `shed-projects`; `OWN.editor.idb`). Repartido a todas las apps el mismo día (cachés de los sw.js subidas donde servían primero la caché) y compilado en `apps-v1.3.15` (Windows, Mac, Android y plataforma 1.0.5).
 - v17 — tarjeta de **GlitchHead** (web + VST3/AU: Shred · Haze · Split). sh-core 1.2.1 (GlitchHead en «Enviar a…» y en las copias de datos).
 - v16 — descargas siempre al día: la hoja consulta GitHub al abrirse (caché de 2 min, antes 30) y mira las 3 últimas releases `apps-v*`; si una descarga aún no está en la nueva, ofrece la de la anterior. Fuera los enlaces de reserva con nombres inventados (`DL_FALLBACK`): si GitHub no responde, remite a la página de descargas. `desktop/scripts/release.sh` conserva la release anterior (antes la borraba al publicar la nueva y los enlaces abiertos o guardados daban 404).
@@ -66,6 +67,7 @@ Si se cambia el logo, hay que volver a recortar las tres capas y revisar las med
 - Probar en navegador headless antes de entregar.
 
 ## Límites conocidos
+- El envío entre apps Android solo funciona entre APK compilados con el shell 1.4.0 o posterior (instalar de nuevo todas desde el portal). No se pudo probar en un móvil real: se probó compilando el Java y con un `SHAndroid` simulado en el navegador.
 - La hoja de descargas depende de la API pública de GitHub (60 consultas/hora por conexión; se hacen 1–2 por visita). Si se supera, salen los enlaces de reserva con un aviso.
 - Los instaladores no tienen certificado de pago: Windows y Mac muestran un aviso la primera vez (explicado en la propia hoja).
 - La carpeta `desktop/` también la publica GitHub Pages (son solo scripts e iconos; no afecta al portal).

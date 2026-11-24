@@ -12,7 +12,7 @@ archivos de su `sw.js`. En las versiones standalone de un solo archivo va incrus
 ## Qué hace
 | Pieza | Web | Windows y Mac |
 | --- | --- | --- |
-| Bandeja entre apps (`SH.bridge`) | IndexedDB `sh-bridge`, buzón `v2:in:<app>` | Carpeta `Documentos/SampledHead/Bandeja/<app>/` |
+| Bandeja entre apps (`SH.bridge`) | IndexedDB `sh-bridge`, buzón `v2:in:<app>` · en las apps Android instaladas (1.3.0): archivo `.shitem` que se pasa a la otra app con un intent `com.sampledhead.RECIBIR` | Carpeta `Documentos/SampledHead/Bandeja/<app>/` |
 | Aviso de llegada | BroadcastChannel + al volver a la pestaña | Vigilancia de la carpeta |
 | Abrir otra app (`SH.open`) | Pestaña nueva en GitHub Pages | El programa instalado; si no está, la web |
 | Modelos de IA (`SH.models`) | Caché `sh-models-v1` (reaprovecha `spb-models-v1`) | Carpeta `Documentos/SampledHead/Modelos/` |
@@ -59,3 +59,11 @@ app (Chuleta Beat: «💾 Datos»; SampledHead App: menú Más). En la plataform
   ajustes sueltos: manda el dispositivo donde se importa;
 - en localStorage, las listas y colecciones de objetos (escenas, presets propios, afinaciones…) se suman;
 - `{ replace: true }` hace lo de antes (sustituir); no se usa en la interfaz.
+
+## Apps Android instaladas — sh-core 1.3.0 (24-11-2026)
+Cada APK tiene su propio almacenamiento, así que la bandeja web (IndexedDB) no llega de una app a otra.
+Desde la 1.3.0, si existe `SHAndroid.outBegin` (shell Android ≥ 1.4.0):
+1. `SH.bridge.send` empaqueta cada elemento como `.shitem` (`"SHI1"` + longitud JSON u32 LE + JSON + WAV) y lo escribe en `cacheDir/salida` en trozos base64.
+2. `SHAndroid.sendTo(appId, nombres)` abre la otra app con el intent `com.sampledhead.RECIBIR` y le da permiso de lectura (ContentProvider `<paquete>.bandeja`).
+3. La app destino copia los archivos a `filesDir/bandeja`, avisa con el evento `sh-bandeja` y `SH.bridge.inbox` los mete en su buzón (`/__bandeja__/<nombre>` → IndexedDB) y los borra.
+Si la app destino no está instalada, el envío avisa y las hojas «Enviar a…» la muestran como «No instalada». Las apps web y de escritorio siguen igual.

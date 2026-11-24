@@ -162,7 +162,82 @@ public class MainActivity extends Activity {
         @JavascriptInterface public void report() { saveReport("informe manual", null, null, true); }
         /** La web lo usa para saber que el programa ya deja el hueco de las barras del sistema (v1.1.2+). */
         @JavascriptInterface public int insets() { return 1; }
+
+        // ---- Bandeja entre apps instaladas (1.4.0): la web deja cada elemento en cache/salida y se envía por intent ----
+        @JavascriptInterface public int outBegin() {
+            try { File f = new File(OutboxProvider.dir(MainActivity.this), "sh-" + System.currentTimeMillis() + "-" + (int) (Math.random() * 1e6) + ".shitem");
+                Download d = new Download(); d.name = f.getName(); d.out = new java.io.FileOutputStream(f);
+                synchronized (downloads) { int id = nextDownload++; downloads.put(id, d); return id; } }
+            catch (Exception e) { log("error", "bandeja: " + e); return -1; }
+        }
+        @JavascriptInterface public String outEnd(int id) {
+            Download d; synchronized (downloads) { d = downloads.remove(id); } if (d == null) return "";
+            try { d.out.close(); return d.name; } catch (Exception e) { log("error", "bandeja fin: " + e); return ""; }
+        }
+        /** ¿Está instalada la app de Sampled Head con este id (sampler, crazyhead…)? */
+        @JavascriptInterface public boolean hasApp(String appId) { return target(appId) != null; }
+        /** Envía los elementos preparados a la otra app y la abre. */
+        @JavascriptInterface public boolean sendTo(String appId, String names) {
+            Intent i = target(appId); if (i == null) return false;
+            try {
+                android.content.ClipData clip = null;
+                for (String n : names.split(",")) { if (n.trim().isEmpty()) continue;
+                    Uri u = Uri.parse("content://" + getPackageName() + ".bandeja/" + n.trim());
+                    if (clip == null) clip = android.content.ClipData.newRawUri("SampledHead", u); else clip.addItem(new android.content.ClipData.Item(u)); }
+                if (clip != null) i.setClipData(clip);
+                i.putExtra("from", getString(R.string.app_id));
+                i.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_ACTIVITY_NEW_TASK);
+                step("Enviando a " + appId + ": " + names);
+                ui.post(() -> { try { startActivity(i); } catch (Exception e) { log("error", "enviar: " + e); toast("No se pudo abrir la otra app"); } });
+                return true;
+            } catch (Exception e) { log("error", "enviar: " + e); return false; }
+        }
+        /** Abre otra app de Sampled Head instalada (sin enviarle nada). */
+        @JavascriptInterface public boolean openApp(String appId) {
+            Intent i = target(appId); if (i == null) return false;
+            i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            ui.post(() -> { try { startActivity(i); } catch (Exception e) { toast("No se pudo abrir la otra app"); } });
+            return true;
+        }
+        /** Elementos recibidos de otras apps que la web aún no ha recogido (nombres; se leen en /__bandeja__/<nombre>). */
+        @JavascriptInterface public String inboxList() {
+            StringBuilder b = new StringBuilder("["); File[] fs = inboxDir().listFiles();
+            if (fs != null) { Arrays.sort(fs); for (File f : fs) { if (!f.getName().endsWith(".shitem")) continue; if (b.length() > 1) b.append(','); b.append('"').append(f.getName()).append('"'); } }
+            return b.append("]").toString();
+        }
+        @JavascriptInterface public void inboxDone(String names) { for (String n : names.split(",")) { n = n.trim(); if (n.isEmpty() || n.contains("/")) continue; new File(inboxDir(), n).delete(); } }
     }
+    File inboxDir() { File d = new File(getFilesDir(), "bandeja"); d.mkdirs(); return d; }
+    /** Intent para abrir la app de Sampled Head «appId» si está instalada. */
+    Intent target(String appId) {
+        if (appId == null || !appId.matches("[a-z0-9-]+")) return null;
+        Intent i = new Intent("com.sampledhead.RECIBIR").setPackage("com.sampledhead." + appId).addCategory(Intent.CATEGORY_DEFAULT);
+        if (getPackageManager().queryIntentActivities(i, 0).isEmpty()) {
+            Intent l = getPackageManager().getLaunchIntentForPackage("com.sampledhead." + appId);   // APK antiguo (sin RECIBIR)
+            return l;
+        }
+        return i;
+    }
+    /** Copia a la bandeja propia lo que llega de otra app y avisa a la web. */
+    void receive(Intent in) {
+        if (in == null || !"com.sampledhead.RECIBIR".equals(in.getAction()) || in.getClipData() == null) return;
+        final android.content.ClipData clip = in.getClipData(); final String from = String.valueOf(in.getStringExtra("from"));
+        new Thread(() -> {
+            int n = 0;
+            for (int k = 0; k < clip.getItemCount(); k++) {
+                Uri u = clip.getItemAt(k).getUri(); if (u == null) continue;
+                String name = u.getLastPathSegment(); if (name == null || !name.endsWith(".shitem") || name.contains("/")) continue;
+                File dst = new File(inboxDir(), name);
+                try (java.io.InputStream is = getContentResolver().openInputStream(u); java.io.OutputStream os = new java.io.FileOutputStream(dst)) {
+                    byte[] buf = new byte[65536]; int r; while ((r = is.read(buf)) > 0) os.write(buf, 0, r); n++;
+                } catch (Exception e) { log("error", "recibir " + name + ": " + e); dst.delete(); }
+            }
+            final int got = n; step("Recibido de " + from + ": " + got + " elemento(s)");
+            ui.post(() -> { if (got > 0) toast("Recibido de otra app: " + got + (got == 1 ? " elemento" : " elementos"));
+                if (web != null) web.evaluateJavascript("try{window.dispatchEvent(new Event('sh-bandeja'))}catch(e){}", null); });
+        }).start();
+    }
+    @Override protected void onNewIntent(Intent i) { super.onNewIntent(i); setIntent(i); receive(i); }
     static String safeName(String n) { n = n == null || n.trim().isEmpty() ? "archivo" : n.trim(); return n.replaceAll("[\\\\/:*?\"<>|]", "_"); }
     void toast(String s) { ui.post(() -> Toast.makeText(this, s, Toast.LENGTH_LONG).show()); }
 
@@ -220,6 +295,11 @@ public class MainActivity extends Activity {
         s.setMixedContentMode(WebSettings.MIXED_CONTENT_NEVER_ALLOW);
         WebView.setWebContentsDebuggingEnabled(true);
         web.addJavascriptInterface(new Bridge(), "SHAndroid");
+        // 1.4.0: que Android no cierre la página al pasar a otra app (antes se perdía lo que estabas haciendo)
+        if (Build.VERSION.SDK_INT >= 26) web.setRendererPriorityPolicy(WebView.RENDERER_PRIORITY_IMPORTANT, false);
+        try { startForegroundService(new Intent(this, KeepAlive.class)); step("Servicio en segundo plano activo"); } catch (Throwable t) { log("aviso", "segundo plano: " + t); }
+        // limpiar envíos antiguos (más de un día)
+        try { File[] old = OutboxProvider.dir(this).listFiles(); if (old != null) for (File f : old) if (System.currentTimeMillis() - f.lastModified() > 86400000L) f.delete(); } catch (Throwable ignored) {}
         if (WebViewFeature.isFeatureSupported(WebViewFeature.DOCUMENT_START_SCRIPT))
             WebViewCompat.addDocumentStartJavaScript(web, INJECT, Collections.singleton("https://" + HOST));
 
@@ -299,6 +379,7 @@ public class MainActivity extends Activity {
             getOnBackInvokedDispatcher().registerOnBackInvokedCallback(OnBackInvokedDispatcher.PRIORITY_DEFAULT, this::goBack);
 
         if (state != null) web.restoreState(state); else web.loadUrl(START);
+        if (state == null) receive(getIntent());
         step("Cargando " + START);
         ui.postDelayed(() -> checkUpdates(false), 8000);
     }
@@ -316,6 +397,13 @@ public class MainActivity extends Activity {
     WebResourceResponse fromDownloaded(Uri u) {
         File d = upd == null ? null : upd.dir();
         String p = u.getPath();
+        if (p != null && HOST.equals(u.getHost()) && p.startsWith("/__bandeja__/")) {   // elementos recibidos de otras apps
+            String n = p.substring("/__bandeja__/".length());
+            File f = new File(inboxDir(), n);
+            if (n.contains("/") || !f.isFile()) return null;
+            try { WebResourceResponse r = new WebResourceResponse("application/octet-stream", null, new FileInputStream(f));
+                Map<String, String> h = new HashMap<>(); h.put("Cache-Control", "no-store"); r.setResponseHeaders(h); return r; } catch (Exception e) { return null; }
+        }
         if (d == null || p == null || !HOST.equals(u.getHost()) || !p.startsWith("/assets/web/")) return null;
         String rel = p.substring("/assets/web/".length()); if (rel.isEmpty() || rel.endsWith("/")) rel += "index.html";
         try {
@@ -404,5 +492,5 @@ public class MainActivity extends Activity {
 
     @Override protected void onPause() { super.onPause(); if (web != null) web.onPause(); }
     @Override protected void onResume() { super.onResume(); if (web != null) web.onResume(); if (upd != null && upd.lastCheck() > 0 && System.currentTimeMillis() - upd.lastCheck() > 6 * 3600 * 1000L) checkUpdates(false); }
-    @Override protected void onDestroy() { if (web != null) { web.destroy(); web = null; } super.onDestroy(); }
+    @Override protected void onDestroy() { try { stopService(new Intent(this, KeepAlive.class)); } catch (Throwable ignored) {} if (web != null) { web.destroy(); web = null; } super.onDestroy(); }
 }
