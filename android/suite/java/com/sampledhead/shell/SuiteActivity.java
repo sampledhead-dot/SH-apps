@@ -503,11 +503,9 @@ public class SuiteActivity extends Activity {
     /** ¿Hay un APK nuevo de la propia app única? (solo cuando cambia el programa; las apps se actualizan solas) */
     void checkProgram() {
         try {
-            @SuppressWarnings("unchecked") Map<String, Object> rel = (Map<String, Object>) Updater.Json.parse(Updater.getText(Updater.API + "/repos/sampledhead-dot/SH-apps/releases/latest"));
-            String v = String.valueOf(rel.get("tag_name")).replaceFirst("^apps-v", "");
+            String[] lp = Updater.latestProgram("SampledHead-{v}-Android.apk"); if (lp == null) return;
+            String v = lp[0], url = lp[1];
             if (!Updater.newer(versionName(), v) || v.equals(prefs.getString("avisado", ""))) return;
-            String url = String.valueOf(rel.get("html_url")), want = "SampledHead-" + v + "-Android.apk"; Object assets = rel.get("assets");
-            if (assets instanceof List) for (Object o : (List<?>) assets) { @SuppressWarnings("unchecked") Map<String, Object> a = (Map<String, Object>) o; if (want.equalsIgnoreCase(String.valueOf(a.get("name")))) { url = String.valueOf(a.get("browser_download_url")); break; } }
             final String go = url;
             ui.post(() -> { if (isFinishing()) return; prefs.edit().putString("avisado", v).apply();
                 new AlertDialog.Builder(this).setTitle("Versión nueva de SampledHead (v" + v + ")")

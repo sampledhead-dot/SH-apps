@@ -108,10 +108,19 @@ async function checkUpdates(manual) {
   checkProgram(manual);
   if (manual && win) dialog.showMessageBox(win, { type: 'info', title: 'SampledHead', message: 'Apps comprobadas', detail: res.join('\n') }).catch(() => {});
 }
+/* Última release del programa: primero la lista publicada por GitHub Actions (release «actualizaciones», sin límite de
+   consultas); si falla, la API de GitHub (60 consultas/hora por IP sin cuenta). */
+async function latestRel() {
+  try {
+    const r = await net.fetch('https://github.com/sampledhead-dot/SH-apps/releases/download/actualizaciones/programa.json');
+    if (r.ok) { const p = await r.json(); if (p && p.tag) return { tag_name: p.tag, html_url: p.url, assets: (p.assets || []).map(a => ({ name: a[0], browser_download_url: a[1] })) }; }
+  } catch (e) {}
+  try { const r = await net.fetch('https://api.github.com/repos/sampledhead-dot/SH-apps/releases/latest', { headers: { Accept: 'application/vnd.github+json' } }); if (r.ok) return await r.json(); } catch (e) {}
+  return null;
+}
 async function checkProgram(manual) {
   try {
-    const r = await net.fetch('https://api.github.com/repos/sampledhead-dot/SH-apps/releases/latest', { headers: { Accept: 'application/vnd.github+json' } });
-    if (!r.ok) return; const rel = await r.json();
+    const rel = await latestRel(); if (!rel) return;
     // la versión de la plataforma va en el nombre de sus instaladores (SampledHead-X.Y.Z-…), no en la etiqueta de la release
     const want = process.platform === 'win32' ? 'Windows-Setup.exe' : (process.arch === 'arm64' ? 'Mac-AppleSilicon.zip' : 'Mac-Intel.zip');
     const asset = (rel.assets || []).find(x => /^SampledHead-[\d.]+-/.test(x.name) && x.name.endsWith(want)); if (!asset) return;

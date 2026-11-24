@@ -298,11 +298,20 @@ async function checkUpdates(manual) {
   checkProgram(manual);
 }
 /* ¿Hay un instalador nuevo del propio programa? (solo hace falta cuando cambia el envoltorio, no la web) */
+/* Última release del programa: primero la lista publicada por GitHub Actions (release «actualizaciones», sin límite de
+   consultas); si falla, la API de GitHub (60 consultas/hora por IP sin cuenta). */
+async function latestRel() {
+  try {
+    const r = await net.fetch('https://github.com/sampledhead-dot/SH-apps/releases/download/actualizaciones/programa.json');
+    if (r.ok) { const p = await r.json(); if (p && p.tag) return { tag_name: p.tag, html_url: p.url, assets: (p.assets || []).map(a => ({ name: a[0], browser_download_url: a[1] })) }; }
+  } catch (e) {}
+  try { const r = await net.fetch('https://api.github.com/repos/sampledhead-dot/SH-apps/releases/latest', { headers: { Accept: 'application/vnd.github+json' } }); if (r.ok) return await r.json(); } catch (e) {}
+  return null;
+}
 async function checkProgram(manual) {
   try {
-    const r = await net.fetch('https://api.github.com/repos/sampledhead-dot/SH-apps/releases/latest', { headers: { Accept: 'application/vnd.github+json' } });
-    if (!r.ok) return;
-    const rel = await r.json(), v = String(rel.tag_name || '').replace(/^apps-v/, '');
+    const rel = await latestRel(); if (!rel) return;
+    const v = String(rel.tag_name || '').replace(/^apps-v/, '');
     if (!newer(CFG.wrapperVersion, v)) return;
     const seen = path.join(app.getPath('userData'), 'aviso-programa.txt');
     let last = ''; try { last = fs.readFileSync(seen, 'utf8'); } catch (e) {}

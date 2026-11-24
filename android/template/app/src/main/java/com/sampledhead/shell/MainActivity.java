@@ -468,20 +468,14 @@ public class MainActivity extends Activity {
     /** ¿Hay un APK nuevo del propio programa? (solo hace falta cuando cambia el envoltorio, no la web) */
     void checkProgram() {
         try {
-            @SuppressWarnings("unchecked") Map<String, Object> rel = (Map<String, Object>) Updater.Json.parse(Updater.getText(Updater.API + "/repos/sampledhead-dot/SH-apps/releases/latest"));
-            String v = String.valueOf(rel.get("tag_name")).replaceFirst("^apps-v", "");
+            // 1.5.1: la versión y el APK salen de la lista publicada (sin gastar la API de GitHub); si falla, de la API
+            String name = getString(R.string.product_name).replaceAll("[^A-Za-z0-9]+", "-") + "-{v}-Android.apk";
+            String[] lp = Updater.latestProgram(name); if (lp == null) return;
+            String v = lp[0];
             if (!Updater.newer(versionName(), v)) return;
             android.content.SharedPreferences sp = getSharedPreferences("actualizaciones", MODE_PRIVATE);
             if (v.equals(sp.getString("avisado", ""))) return;
-            // El APK publicado se llama <productName>-<versión>-Android.apk (p. ej. «PopPads-…», aunque la app se llame «Pop!Pads»).
-            // Antes se buscaba por el nombre visible y, si no coincidía, se abría la página de GitHub en vez de descargar.
-            String url = String.valueOf(rel.get("html_url")), apk = null;
-            String[] wants = { getString(R.string.product_name).replaceAll("[^A-Za-z0-9]+", "-") + "-" + v + "-Android.apk",
-                               getString(R.string.app_name).replaceAll("[^A-Za-z0-9]+", "-") + "-" + v + "-Android.apk" };
-            Object assets = rel.get("assets");
-            if (assets instanceof java.util.List) for (String want : wants) { if (apk != null) break;
-                for (Object o : (java.util.List<?>) assets) { @SuppressWarnings("unchecked") Map<String, Object> a = (Map<String, Object>) o; if (want.equalsIgnoreCase(String.valueOf(a.get("name")))) { apk = String.valueOf(a.get("browser_download_url")); break; } } }
-            if (apk != null) url = apk; else log("aviso", "no se encontró el APK de esta app en la release: se abre la página");
+            String url = lp[1];
             final String go = url;
             ui.post(() -> { if (isFinishing()) return; sp.edit().putString("avisado", v).apply();
                 new AlertDialog.Builder(this).setTitle("Versión nueva del programa (v" + v + ")")

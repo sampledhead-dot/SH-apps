@@ -39,6 +39,9 @@ public class Updater {
     }
 
     static String API = "https://api.github.com", RAW = "https://raw.githubusercontent.com";
+    /** 1.5.1: lista de archivos de cada repo que publica GitHub Actions (desktop/scripts/manifest.js). Se usa antes que la
+     *  API, que sin cuenta solo admite 60 consultas/hora por IP y en datos móviles daba «HTTP 403». */
+    static String MANIFEST = "https://github.com/sampledhead-dot/SH-apps/releases/download/actualizaciones/";
     static final String OWNER = "sampledhead-dot";
     static final long MAX_BYTES = 300L * 1024 * 1024;
 
@@ -86,25 +89,37 @@ public class Updater {
     public Result check() {
         Result r = new Result();
         try {
-            @SuppressWarnings("unchecked") Map<String, Object> c = (Map<String, Object>) Json.parse(getText(API + "/repos/" + OWNER + "/" + repo + "/commits/HEAD"));
-            String sha = (String) c.get("sha");
-            @SuppressWarnings("unchecked") Map<String, Object> commit = (Map<String, Object>) c.get("commit");
-            @SuppressWarnings("unchecked") String tree = commit == null ? null : (String) ((Map<String, Object>) commit.get("tree")).get("sha");
+            // 1) lista publicada por GitHub Actions (sin límite de consultas); 2) si falla, la API de GitHub como antes
+            String sha = null; List<Object[]> raw = null;
+            try {
+                @SuppressWarnings("unchecked") Map<String, Object> m = (Map<String, Object>) Json.parse(getText(MANIFEST + repo + ".json"));
+                sha = (String) m.get("sha"); raw = new ArrayList<>();
+                for (Object o : (List<?>) m.get("files")) { List<?> f = (List<?>) o; raw.add(new Object[]{String.valueOf(f.get(0)), String.valueOf(f.get(1)), f.get(2)}); }
+            } catch (Exception e) { log.log("aviso", "lista de actualizaciones: " + e.getMessage() + " · se pregunta a la API"); sha = null; raw = null; }
+            String tree = null;
+            if (sha == null) {
+                @SuppressWarnings("unchecked") Map<String, Object> c = (Map<String, Object>) Json.parse(getText(API + "/repos/" + OWNER + "/" + repo + "/commits/HEAD"));
+                sha = (String) c.get("sha");
+                @SuppressWarnings("unchecked") Map<String, Object> commit = (Map<String, Object>) c.get("commit");
+                @SuppressWarnings("unchecked") String tr = commit == null ? null : (String) ((Map<String, Object>) commit.get("tree")).get("sha"); tree = tr;
+            }
             synchronized (this) { checked = System.currentTimeMillis(); save(); }
             r.sha = sha;
             String current; synchronized (this) { current = ready != null ? ready : active != null ? active : bundledSha; }
             if (sha == null || sha.equals(current)) { r.estado = "al-dia"; return r; }
             synchronized (this) { if (bad.contains(sha)) { r.estado = "al-dia"; r.mensaje = "esta versión falló antes al arrancar; se espera a la siguiente"; return r; } }
-            @SuppressWarnings("unchecked") Map<String, Object> t = (Map<String, Object>) Json.parse(getText(API + "/repos/" + OWNER + "/" + repo + "/git/trees/" + tree + "?recursive=1"));
-            if (Boolean.TRUE.equals(t.get("truncated"))) throw new IOException("la lista de archivos del repo está incompleta");
+            if (raw == null) {
+                @SuppressWarnings("unchecked") Map<String, Object> t = (Map<String, Object>) Json.parse(getText(API + "/repos/" + OWNER + "/" + repo + "/git/trees/" + tree + "?recursive=1"));
+                if (Boolean.TRUE.equals(t.get("truncated"))) throw new IOException("la lista de archivos del repo está incompleta");
+                raw = new ArrayList<>();
+                for (Object o : (List<?>) t.get("tree")) { @SuppressWarnings("unchecked") Map<String, Object> e = (Map<String, Object>) o; if ("blob".equals(e.get("type"))) raw.add(new Object[]{e.get("path"), e.get("sha"), e.get("size")}); }
+            }
             List<String[]> files = new ArrayList<>(); long total = 0; boolean hasIndex = false;
-            for (Object o : (List<?>) t.get("tree")) {
-                @SuppressWarnings("unchecked") Map<String, Object> e = (Map<String, Object>) o;
-                if (!"blob".equals(e.get("type"))) continue;
-                String p = (String) e.get("path");
+            for (Object[] e : raw) {
+                String p = (String) e[0];
                 if (!wanted(p, exclude)) continue;
-                files.add(new String[]{p, (String) e.get("sha")});
-                Object sz = e.get("size"); if (sz instanceof Number) total += ((Number) sz).longValue();
+                files.add(new String[]{p, (String) e[1]});
+                if (e[2] instanceof Number) total += ((Number) e[2]).longValue();
                 if ("index.html".equals(p)) hasIndex = true;
             }
             if (!hasIndex) throw new IOException("el repo no tiene index.html");
@@ -159,11 +174,28 @@ public class Updater {
     static HttpURLConnection open(String url) throws IOException {
         HttpURLConnection c = (HttpURLConnection) new URL(url).openConnection();
         c.setConnectTimeout(15000); c.setReadTimeout(30000);
-        c.setRequestProperty("User-Agent", "SampledHead-app"); c.setRequestProperty("Accept", "application/vnd.github+json");
+        c.setRequestProperty("User-Agent", "SampledHead-app"); if (url.startsWith(API)) c.setRequestProperty("Accept", "application/vnd.github+json");
+        c.setInstanceFollowRedirects(true);
         int code = c.getResponseCode(); if (code != 200) { c.disconnect(); throw new IOException("HTTP " + code + " en " + url); }
         return c;
     }
     static byte[] getBytes(String url) throws IOException { HttpURLConnection c = open(url); try (InputStream in = c.getInputStream()) { return readAll(in); } finally { c.disconnect(); } }
+    /** Última release del programa (apps-v*): {tag, url del APK o de la release}. Primero la lista publicada; si falla, la API. */
+    static String[] latestProgram(String apkName) {
+        try {
+            @SuppressWarnings("unchecked") Map<String, Object> m = (Map<String, Object>) Json.parse(getText(MANIFEST + "programa.json"));
+            String tag = String.valueOf(m.get("tag")).replaceFirst("^apps-v", ""), url = String.valueOf(m.get("url"));
+            Object a = m.get("assets"); if (a instanceof List) for (Object o : (List<?>) a) { List<?> x = (List<?>) o; if (String.valueOf(x.get(0)).equalsIgnoreCase(apkName.replace("{v}", tag))) url = String.valueOf(x.get(1)); }
+            return new String[]{tag, url};
+        } catch (Exception e) {
+            try {
+                @SuppressWarnings("unchecked") Map<String, Object> rel = (Map<String, Object>) Json.parse(getText(API + "/repos/sampledhead-dot/SH-apps/releases/latest"));
+                String tag = String.valueOf(rel.get("tag_name")).replaceFirst("^apps-v", ""), url = String.valueOf(rel.get("html_url"));
+                Object a = rel.get("assets"); if (a instanceof List) for (Object o : (List<?>) a) { @SuppressWarnings("unchecked") Map<String, Object> x = (Map<String, Object>) o; if (String.valueOf(x.get("name")).equalsIgnoreCase(apkName.replace("{v}", tag))) url = String.valueOf(x.get("browser_download_url")); }
+                return new String[]{tag, url};
+            } catch (Exception e2) { return null; }
+        }
+    }
     static String getText(String url) throws IOException { return new String(getBytes(url), StandardCharsets.UTF_8); }
     static void deleteTree(File f) { File[] k = f.listFiles(); if (k != null) for (File x : k) deleteTree(x); f.delete(); }
 

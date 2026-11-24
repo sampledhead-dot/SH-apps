@@ -14,6 +14,9 @@ const crypto = require('crypto');
 
 const API = process.env.SH_UPDATE_API || 'https://api.github.com';
 const RAW = process.env.SH_UPDATE_RAW || 'https://raw.githubusercontent.com';
+// Lista de archivos publicada por GitHub Actions (desktop/scripts/manifest.js): se usa antes que la API, que sin cuenta
+// solo admite 60 consultas/hora por IP (24-11-2026: «HTTP 403» en Android con datos móviles).
+const MANIFEST = process.env.SH_UPDATE_MANIFEST || 'https://github.com/sampledhead-dot/SH-apps/releases/download/actualizaciones/';
 const OWNER = 'sampledhead-dot';
 const MAX_BYTES = 300 * 1024 * 1024;
 
@@ -56,7 +59,7 @@ function createUpdater(o) {
   cleanup();
 
   async function getJson(url) {
-    const r = await o.fetch(url, { headers: { Accept: 'application/vnd.github+json', 'User-Agent': 'SampledHead-app' } });
+    const r = await o.fetch(url, { headers: url.startsWith(API) ? { Accept: 'application/vnd.github+json', 'User-Agent': 'SampledHead-app' } : { 'User-Agent': 'SampledHead-app' } });
     if (!r.ok) throw new Error('HTTP ' + r.status + ' en ' + url);
     return r.json();
   }
@@ -79,15 +82,21 @@ function createUpdater(o) {
     if (busy) return busy;
     busy = (async () => {
       try {
-        const c = await getJson(API + '/repos/' + OWNER + '/' + o.repo + '/commits/HEAD');
-        const sha = c.sha, tree = c.commit && c.commit.tree && c.commit.tree.sha;
+        let m = null, c = null;
+        try { m = await getJson(MANIFEST + o.repo + '.json'); if (!m || !m.sha || !Array.isArray(m.files)) m = null; } catch (e) { log('aviso', 'lista de actualizaciones: ' + e.message + ' · se pregunta a la API'); }
+        if (!m) c = await getJson(API + '/repos/' + OWNER + '/' + o.repo + '/commits/HEAD');
+        const sha = m ? m.sha : c.sha, tree = c && c.commit && c.commit.tree && c.commit.tree.sha;
         S.checked = Date.now(); save();
         const current = S.ready || S.active || o.bundledSha;
         if (!sha || sha === current) return { estado: 'al-dia', sha };
         if ((S.bad || []).includes(sha)) return { estado: 'al-dia', sha, mensaje: 'esta versión falló antes al arrancar; se espera a la siguiente' };
-        const t = await getJson(API + '/repos/' + OWNER + '/' + o.repo + '/git/trees/' + tree + '?recursive=1');
-        if (t.truncated) throw new Error('la lista de archivos del repo está incompleta (demasiados archivos)');
-        const files = (t.tree || []).filter(e => e.type === 'blob' && wanted(e.path, o.exclude || []));
+        let files;
+        if (m) files = m.files.map(f => ({ path: f[0], sha: f[1], size: f[2], type: 'blob' })).filter(e => wanted(e.path, o.exclude || []));
+        else {
+          const t = await getJson(API + '/repos/' + OWNER + '/' + o.repo + '/git/trees/' + tree + '?recursive=1');
+          if (t.truncated) throw new Error('la lista de archivos del repo está incompleta (demasiados archivos)');
+          files = (t.tree || []).filter(e => e.type === 'blob' && wanted(e.path, o.exclude || []));
+        }
         if (!files.some(f => f.path === 'index.html')) throw new Error('el repo no tiene index.html');
         const total = files.reduce((a, f) => a + (f.size || 0), 0);
         if (total > MAX_BYTES) throw new Error('la app ocupa demasiado para actualizarla así (' + Math.round(total / 1048576) + ' MB)');
@@ -112,7 +121,7 @@ function createUpdater(o) {
         fs.renameSync(tmp, dirOf(sha));
         S.ready = sha; save(); cleanup();
         log('info', 'versión nueva lista: ' + sha.slice(0, 7) + ' (' + changed + ' archivos cambiados, ' + Math.round(bytes / 1024) + ' KB descargados)');
-        return { estado: 'lista', sha, cambiados: changed, bytes, fecha: c.commit && c.commit.committer && c.commit.committer.date, mensaje: c.commit && c.commit.message };
+        return { estado: 'lista', sha, cambiados: changed, bytes, fecha: m ? m.date : c.commit && c.commit.committer && c.commit.committer.date, mensaje: c ? c.commit && c.commit.message : '' };
       } catch (e) {
         log('aviso', 'actualización: ' + (e && e.message || e));
         return { estado: 'error', mensaje: String(e && e.message || e) };
@@ -151,4 +160,4 @@ function newer(a, b) {
   return false;
 }
 
-module.exports = { createUpdater, blobSha, wanted, newer, API, OWNER };
+module.exports = { createUpdater, blobSha, wanted, newer, API, OWNER, MANIFEST };

@@ -1,0 +1,40 @@
+# Publica la lista de archivos de cada app (release «actualizaciones») para que las apps instaladas se actualicen sin
+# usar la API de GitHub (límite de 60 consultas/hora por IP). Ver desktop/scripts/manifest.js.
+name: actualizaciones
+on:
+  schedule:
+    - cron: "7,27,47 * * * *"
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: ["desktop/apps.json", "desktop/scripts/manifest.js", ".github/workflows/manifest.yml"]
+permissions:
+  contents: write
+concurrency:
+  group: manifest
+  cancel-in-progress: false
+jobs:
+  manifest:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Listas de archivos
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: node desktop/scripts/manifest.js "$RUNNER_TEMP/m"
+      - name: Publicar solo lo que ha cambiado
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          R=actualizaciones
+          if ! gh release view $R >/dev/null 2>&1; then
+            gh release create $R --prerelease --title "Actualizaciones de las apps (uso interno)" \
+              --notes "Listas de archivos que usan las apps instaladas (Android, Windows y Mac) para actualizarse solas. No es una descarga para instalar."
+          fi
+          mkdir -p "$RUNNER_TEMP/old"; gh release download $R -D "$RUNNER_TEMP/old" -p '*.json' 2>/dev/null || true
+          up=()
+          for f in "$RUNNER_TEMP"/m/*.json; do n=$(basename "$f"); cmp -s "$f" "$RUNNER_TEMP/old/$n" || up+=("$f"); done
+          if [ ${#up[@]} -gt 0 ]; then printf 'Sube %s\n' "${up[@]}"; gh release upload $R "${up[@]}" --clobber; else echo "Sin cambios"; fi
