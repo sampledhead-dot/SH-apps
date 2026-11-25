@@ -159,7 +159,7 @@
       ]
     }
   ],
-  "suiteVersion": "1.0.5",
+  "suiteVersion": "1.0.6",
   "plugins": [
     {
       "id": "fuzzhead-vst",
@@ -192,6 +192,14 @@
       "app": "glitchhead",
       "bundle": "GlitchHead",
       "desc": "Shred · Haze · Split en tiempo real dentro de tu DAW."
+    },
+    {
+      "id": "crazyhead-vst",
+      "name": "CrazyHead (VST3/AU)",
+      "repo": "CrazyHead-VST",
+      "app": "crazyhead",
+      "bundle": "CrazyHead",
+      "desc": "El sampler de una pista con generador al azar, sincronizado con tu DAW."
     }
   ]
 }

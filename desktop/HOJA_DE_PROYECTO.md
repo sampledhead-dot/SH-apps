@@ -43,7 +43,7 @@ usa el micrófono o la interfaz de audio, MIDI y descargas (WAV, ZIP…) igual q
 |---|---|---|---|
 | SH-apps (portal) | ✔ | — (siempre solo web, hasta nuevo aviso) | — |
 | SampledHead App | ✔ | ✔ | — |
-| CrazyHead | ✔ | ✔ | — |
+| CrazyHead | ✔ | ✔ | ✔ (repo CrazyHead-VST, `vst/`; instrumento de una pista, VST3 + AU + Standalone) |
 | Pop!Pads | ✔ | ✔ | — |
 | SampledHead Editor | ✔ | ✔ | — |
 | TonoPad | ✔ | ✔ | — |
@@ -172,7 +172,7 @@ Todas las apps de Windows/Mac en un solo programa (`desktop/suite/`). Las apps s
 - **Traer datos de las versiones web (1.0.1):** cada app web guarda una copia `.shdatos` (sh-core `SH.backup`: solo sus
   claves de localStorage y sus bases IndexedDB). «Traer mis datos» → «Elegir archivos .shdatos» las deja en
   `userData/pendientes/<app>.shdatos`; al abrir la app, sh-core la pide (`shDesktop.backup.pending`), la aplica y recarga.
-- **Plugins VST3/AU** (`apps.json → plugins`: FuzzHead, TapeHead y SampledHead Tuner): descarga el último `vst-v*` de su repo.
+- **Plugins VST3/AU** (`apps.json → plugins`: FuzzHead, TapeHead, SampledHead Tuner, GlitchHead y CrazyHead): descarga el último `vst-v*` de su repo.
   Windows: `C:\Program Files\Common Files\VST3` (pide permiso de administrador una vez; si se rechaza, carpeta del usuario
   `%LOCALAPPDATA%\Programs\Common\VST3`). Mac: `~/Library/Audio/Plug-Ins/VST3` y `Components`, sin cuarentena.
 - **Compilación:** `scripts/clone-all.sh` + `scripts/prepare-suite.js` + electron-builder (Windows) / `mac-zip.sh suite`

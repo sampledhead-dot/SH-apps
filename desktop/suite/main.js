@@ -8,7 +8,7 @@
  * - Cada app tiene su almacenamiento (partición persist:<id>) y se sirve en shapp://app/, el mismo origen que las apps
  *   sueltas, así sus proyectos, kits y ajustes se pueden importar copiando sus carpetas.
  * - Cada app se actualiza sola y por separado desde su repositorio (updater.js), sin reinstalar el programa.
- * - Al instalar se eligen las apps y los plugins VST/AU (Tuner, FuzzHead y TapeHead). Se puede cambiar después desde el inicio.
+ * - Al instalar se eligen las apps y los plugins VST/AU (Tuner, FuzzHead, TapeHead, GlitchHead y CrazyHead). Se puede cambiar después desde el inicio.
  * - Comparte con las apps sueltas la carpeta Documentos/SampledHead (bandeja, modelos, motor de IA) vía shared.js.
  */
 'use strict';

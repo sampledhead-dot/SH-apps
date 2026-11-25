@@ -4,7 +4,7 @@
    (su manifest.webmanifest o su archivo de logo). Si no se puede leer, se usa la
    copia guardada en icons/, y si tampoco, el emoji. */
 
-const VERSION = "v18";
+const VERSION = "v19";
 const BASE = "https://sampledhead-dot.github.io/";
 const MAIN_LOGO = "logo.png";
 const EYE_WHITE = "eye-white.png";
@@ -19,8 +19,8 @@ const GH_API = "https://api.github.com/repos/sampledhead-dot/";
 const APPS = [
   { name: "SampledHead App", dl: "SampledHead-App", url: BASE + "sampledhead-app/", manifest: "manifest.webmanifest", local: "icons/sampledhead-app.png",
     desc: "Sampler de pads en el navegador: graba, edita, haz loops y exporta a Koala, Ableton, MPC y SP-404.", emoji: "🥁" },
-  { name: "CrazyHead", dl: "CrazyHead", url: BASE + "CrazyHead/", manifest: "manifest.webmanifest", local: "icons/crazyhead.png",
-    desc: "Sampler con generador de secuencias aleatorias, cuatro pistas y efectos.", emoji: "🌀" },
+  { name: "CrazyHead", dl: "CrazyHead", vst: { repo: "CrazyHead-VST", tag: "vst-v1.0.0", file: "CrazyHead-VST-1.0.0-Windows.zip" }, url: BASE + "CrazyHead/", manifest: "manifest.webmanifest", local: "icons/crazyhead.png",
+    desc: "Sampler con generador de secuencias aleatorias, cuatro pistas y efectos. También VST3/AU (una pista) para tu DAW.", emoji: "🌀" },
   { name: "SampledHead Editor", dl: "SampledHead-Editor", url: BASE + "sampledhead-editor/", manifest: "manifest.webmanifest", local: "icons/editor.png",
     desc: "Editor de audio y masterización: recorta, limpia, separa stems con IA y exporta en WAV o MP3.", emoji: "🎚️" },
   { name: "Sample Pack Builder", dl: "Sample-Pack-Builder", url: BASE + "spb-head/", liveIcon: "logo.svg", local: "icons/spb.svg",
