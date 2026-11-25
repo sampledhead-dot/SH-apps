@@ -282,6 +282,8 @@ public class MainActivity extends Activity {
         "document.addEventListener('click',function(e){var a=e.target&&e.target.closest&&e.target.closest('a');if(isFile(a)){e.preventDefault();save(a.href,a.getAttribute('download')||'archivo');}},true);" +
         "var ow=window.open;window.open=function(u){if(u&&/^(blob:|data:)/.test(String(u))){save(String(u),'archivo');return null;}return ow.apply(window,arguments);};" +
         "window.addEventListener('error',function(e){console.error('[window.onerror] '+e.message+' '+(e.filename||'')+':'+(e.lineno||''))});" +
+        "var __la='';document.addEventListener('pointerdown',function(e){try{var t=e.target&&e.target.closest&&e.target.closest('button,[role=button],a,input,select,label,canvas,[id]');__la=t?((t.id?'#'+t.id:t.tagName.toLowerCase())+(t.textContent&&t.textContent.trim()?' «'+t.textContent.trim().slice(0,24)+'»':'')):'';}catch(x){}},true);" +
+        "try{new PerformanceObserver(function(l){l.getEntries().forEach(function(e){if(e.duration>=300)console.warn('[tarea larga] '+Math.round(e.duration)+' ms · última acción: '+(__la||'-'));});}).observe({type:'longtask'});}catch(e){}" +
         "window.addEventListener('unhandledrejection',function(e){console.error('[unhandledrejection] '+(e.reason&&e.reason.stack||e.reason))});" +
         "})();";
 
@@ -370,6 +372,13 @@ public class MainActivity extends Activity {
             }
         });
 
+        // 1.5.2: registrar cuándo la página se queda ocupada (la causa sale en el informe: tareas largas y la última acción)
+        if (WebViewFeature.isFeatureSupported(WebViewFeature.WEB_VIEW_RENDERER_CLIENT_BASIC_USAGE))
+            WebViewCompat.setWebViewRenderProcessClient(web, java.util.concurrent.Executors.newSingleThreadExecutor(), new androidx.webkit.WebViewRenderProcessClient() {
+                long t0 = 0;
+                @Override public void onRenderProcessUnresponsive(WebView v, androidx.webkit.WebViewRenderProcess r) { long n = System.currentTimeMillis(); if (t0 == 0) t0 = n - 5000; log("aviso", "La página no responde desde hace " + (n - t0) / 1000 + " s"); }
+                @Override public void onRenderProcessResponsive(WebView v, androidx.webkit.WebViewRenderProcess r) { if (t0 > 0) log("aviso", "La página vuelve a responder tras ~" + (System.currentTimeMillis() - t0) / 1000 + " s"); t0 = 0; }
+            });
         web.setWebChromeClient(new WebChromeClient() {
             @Override public void onPermissionRequest(PermissionRequest req) {
                 boolean audio = false;

@@ -318,10 +318,19 @@ public class SuiteActivity extends Activity {
             }
             @Override public boolean onRenderProcessGone(WebView v, RenderProcessGoneDetail d) {
                 // Todas las vistas comparten el proceso de la página: se cierran todas y se vuelve al inicio.
-                saveReport("proceso de las páginas", null, "El proceso de las páginas se cerró (" + (d.didCrash() ? "fallo" : "falta de memoria") + "). Prueba a tener menos apps abiertas a la vez (Ajustes del inicio).", true);
+                // Todas las vistas reciben el aviso a la vez: solo la primera guarda informe y reinicia.
+                if (goneHandled) return true; goneHandled = true;
+                if (System.currentTimeMillis() - killedHung < 10000) step("Páginas reiniciadas tras el bloqueo");
+                else saveReport("proceso de las páginas", null, "El proceso de las páginas se cerró (" + (d.didCrash() ? "fallo" : "falta de memoria") + "). Prueba a tener menos apps abiertas a la vez (Ajustes del inicio).", true);
                 ui.post(SuiteActivity.this::recreate); return true;
             }
         });
+        // 1.5.2: aviso cuando una página se queda ocupada (la causa queda en el informe: tareas largas y la última acción)
+        if (WebViewFeature.isFeatureSupported(WebViewFeature.WEB_VIEW_RENDERER_CLIENT_BASIC_USAGE))
+            WebViewCompat.setWebViewRenderProcessClient(w, hangExec, new androidx.webkit.WebViewRenderProcessClient() {
+                @Override public void onRenderProcessUnresponsive(WebView v, androidx.webkit.WebViewRenderProcess r) { hung(appId, r); }
+                @Override public void onRenderProcessResponsive(WebView v, androidx.webkit.WebViewRenderProcess r) { unhung(appId); }
+            });
         w.setWebChromeClient(new WebChromeClient() {
             @Override public void onPermissionRequest(PermissionRequest req) {
                 boolean audio = false; for (String r : req.getResources()) if (PermissionRequest.RESOURCE_AUDIO_CAPTURE.equals(r)) audio = true;
@@ -349,6 +358,29 @@ public class SuiteActivity extends Activity {
             }
         });
         return w;
+    }
+    final java.util.concurrent.Executor hangExec = java.util.concurrent.Executors.newSingleThreadExecutor();
+    volatile long hangT = 0; volatile long killedHung = 0; boolean goneHandled = false; AlertDialog hangDlg;
+    void hung(String id, androidx.webkit.WebViewRenderProcess r) {
+        long now = System.currentTimeMillis(); if (hangT == 0) hangT = now - 5000;   // el aviso llega tras ~5 s sin responder
+        final long secs = (now - hangT) / 1000; final String name = id == null ? "El inicio" : apps.containsKey(id) ? apps.get(id).name : id;
+        log("aviso", "La página no responde (" + (id == null ? "inicio" : id) + ") desde hace " + secs + " s");
+        if (secs < 8) return;
+        ui.post(() -> {
+            if (hangDlg != null && hangDlg.isShowing()) { hangDlg.setMessage(msgHang(name, (System.currentTimeMillis() - hangT) / 1000)); return; }
+            hangDlg = new AlertDialog.Builder(this).setTitle(name + " está ocupada").setMessage(msgHang(name, secs)).setCancelable(false)
+                .setNegativeButton("Esperar", null)
+                .setPositiveButton("Reiniciar", (dl, w2) -> {
+                    saveReport("página bloqueada (" + (id == null ? "inicio" : id) + ")", null, name + " dejó de responder " + (System.currentTimeMillis() - hangT) / 1000 + " s; se reinició", false);
+                    killedHung = System.currentTimeMillis(); hangT = 0; try { if (!r.terminate()) { killedHung = 0; recreate(); } } catch (Throwable t) { killedHung = 0; recreate(); }
+                }).show();
+        });
+    }
+    static String msgHang(String name, long s) { return name + " lleva " + s + " s sin responder. Puedes esperar o reiniciar SampledHead (se cierran las apps abiertas; lo que tengas guardado no se pierde). Al reiniciar se guarda un informe en Descargas/SampledHead."; }
+    void unhung(String id) {
+        if (hangT == 0) return; long s = (System.currentTimeMillis() - hangT) / 1000; hangT = 0;
+        log("aviso", "La página vuelve a responder (" + (id == null ? "inicio" : id) + ") tras ~" + s + " s");
+        ui.post(() -> { if (hangDlg != null && hangDlg.isShowing()) hangDlg.dismiss(); hangDlg = null; });
     }
     String colorOf(String id) { AppInfo a = apps.get(id); String c = a != null && a.color != null ? a.color : "#111111"; return c.matches("#[0-9a-fA-F]{6}") ? c : "#111111"; }
     /** https://sampledhead-dot.github.io/<repo>/… → id de la app de dentro, si la hay. */
@@ -412,6 +444,8 @@ public class SuiteActivity extends Activity {
         "document.addEventListener('click',function(e){var a=e.target&&e.target.closest&&e.target.closest('a');if(isFile(a)){e.preventDefault();save(a.href,a.getAttribute('download')||'archivo');}},true);" +
         "var ow=window.open;window.open=function(u){if(u&&/^(blob:|data:)/.test(String(u))){save(String(u),'archivo');return null;}return ow.apply(window,arguments);};" +
         "window.addEventListener('error',function(e){console.error('[window.onerror] '+e.message+' '+(e.filename||'')+':'+(e.lineno||''))});" +
+        "var __la='';document.addEventListener('pointerdown',function(e){try{var t=e.target&&e.target.closest&&e.target.closest('button,[role=button],a,input,select,label,canvas,[id]');__la=t?((t.id?'#'+t.id:t.tagName.toLowerCase())+(t.textContent&&t.textContent.trim()?' «'+t.textContent.trim().slice(0,24)+'»':'')):'';}catch(x){}},true);" +
+        "try{new PerformanceObserver(function(l){l.getEntries().forEach(function(e){if(e.duration>=300)console.warn('[tarea larga] '+Math.round(e.duration)+' ms · última acción: '+(__la||'-'));});}).observe({type:'longtask'});}catch(e){}" +
         "window.addEventListener('unhandledrejection',function(e){console.error('[unhandledrejection] '+(e.reason&&e.reason.stack||e.reason))});" +
         "})();";
 
