@@ -29,7 +29,14 @@ async function get(u) { const r = await fetch(u, { headers: H }); if (!r.ok) thr
   }
   try {
     const r = await get(API + '/repos/' + OWNER + '/SH-apps/releases/latest');
-    fs.writeFileSync(path.join(out, 'programa.json'), JSON.stringify({ tag: r.tag_name, url: r.html_url, assets: (r.assets || []).map(a => [a.name, a.browser_download_url]) }));
+    // Una release puede llevar instaladores de la plataforma de dos versiones (SampledHead-1.0.5-… y -1.0.6-…): se deja
+    // solo la más nueva, porque los programas hasta la 1.0.6 se quedan con el primero de la lista y no avisaban.
+    // Se agrupa por sistema (Windows-Setup.exe, Mac-Intel.zip, …): el APK de Android lleva otra numeración.
+    const key = n => { const m = n.match(/^SampledHead-(\d+)\.(\d+)\.(\d+)-(.+)$/); return m ? { k: m[4], v: m.slice(1, 4).map(Number) } : null; };
+    const cmp = (a, b) => a[0] - b[0] || a[1] - b[1] || a[2] - b[2];
+    const top = {}; for (const a of r.assets || []) { const x = key(a.name); if (x && (!top[x.k] || cmp(x.v, top[x.k]) > 0)) top[x.k] = x.v; }
+    const assets = (r.assets || []).filter(a => { const x = key(a.name); return !x || cmp(x.v, top[x.k]) === 0; });
+    fs.writeFileSync(path.join(out, 'programa.json'), JSON.stringify({ tag: r.tag_name, url: r.html_url, assets: assets.map(a => [a.name, a.browser_download_url]) }));
   } catch (e) { bad++; console.error('✕ programa', e.message); }
   if (bad === repos.length + 1) process.exit(1);
 })();

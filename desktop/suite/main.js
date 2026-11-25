@@ -8,6 +8,7 @@
  * - Cada app tiene su almacenamiento (partición persist:<id>) y se sirve en shapp://app/, el mismo origen que las apps
  *   sueltas, así sus proyectos, kits y ajustes se pueden importar copiando sus carpetas.
  * - Cada app se actualiza sola y por separado desde su repositorio (updater.js), sin reinstalar el programa.
+ * - El propio programa también se actualiza solo (checkProgram): descarga el instalador nuevo y lo instala al reiniciar o al cerrar.
  * - Al instalar se eligen las apps y los plugins VST/AU (Tuner, FuzzHead, TapeHead, GlitchHead y CrazyHead). Se puede cambiar después desde el inicio.
  * - Comparte con las apps sueltas la carpeta Documentos/SampledHead (bandeja, modelos, motor de IA) vía shared.js.
  */
@@ -118,22 +119,71 @@ async function latestRel() {
   try { const r = await net.fetch('https://api.github.com/repos/sampledhead-dot/SH-apps/releases/latest', { headers: { Accept: 'application/vnd.github+json' } }); if (r.ok) return await r.json(); } catch (e) {}
   return null;
 }
+/* El propio programa se actualiza solo (desde 1.0.7): descarga en segundo plano el instalador de su sistema y lo instala.
+   - Windows: el instalador NSIS en modo silencioso (/S) sobre la instalación actual; --force-run vuelve a abrirlo.
+   - Mac: descomprime el .zip con ditto y, cuando el programa se cierra, un script cambia el .app por el nuevo y lo abre.
+   Se pregunta «Reiniciar ahora» o «Al cerrar»; si no hay permiso para escribir (p. ej. Mac sin derechos sobre la carpeta)
+   se vuelve al aviso con «Descargar». Ante cualquier fallo, el aviso de siempre. */
+let progPending = null;   // { v, run(relaunch) } listo para instalar
+function progExe() { if (process.platform !== 'darwin') return process.execPath; const m = process.execPath.match(/^(.*?\.app)\//); return m ? m[1] : null; }
+async function progDownload(url, file) {
+  const r = await net.fetch(url); if (!r.ok) throw new Error('HTTP ' + r.status);
+  const buf = Buffer.from(await r.arrayBuffer()); if (buf.length < 1e6) throw new Error('descarga demasiado pequeña (' + buf.length + ' B)');
+  fs.writeFileSync(file + '.part', buf); fs.renameSync(file + '.part', file); return file;
+}
+async function progPrepare(v, asset) {
+  if (!app.isPackaged) throw new Error('sin empaquetar');
+  const dir = path.join(app.getPath('userData'), 'programa-nuevo'); fs.rmSync(dir, { recursive: true, force: true }); fs.mkdirSync(dir, { recursive: true });
+  const file = await progDownload(asset.browser_download_url, path.join(dir, asset.name));
+  step('Plataforma v' + v + ' descargada (' + Math.round(fs.statSync(file).size / 1e6) + ' MB)');
+  if (process.platform === 'win32') {
+    return { v, run: relaunch => { spawn(file, relaunch ? ['/S', '--updated', '--force-run'] : ['/S', '--updated'], { detached: true, stdio: 'ignore' }).unref(); } };
+  }
+  if (process.platform === 'darwin') {
+    const target = progExe(); if (!target) throw new Error('no se encuentra el .app');
+    fs.accessSync(path.dirname(target), fs.constants.W_OK);
+    const ex = path.join(dir, 'x');
+    await new Promise((ok, ko) => { const p = spawn('/usr/bin/ditto', ['-x', '-k', file, ex]); p.on('exit', c => c === 0 ? ok() : ko(new Error('ditto ' + c))); p.on('error', ko); });
+    const nu = fs.readdirSync(ex).find(n => n.endsWith('.app')); if (!nu) throw new Error('el zip no trae .app');
+    const sh = path.join(dir, 'instalar.sh');
+    fs.writeFileSync(sh, ['#!/bin/bash', 'PID="$1"; NEW="$2"; OLD="$3"; OPEN="$4"',
+      'for i in $(seq 1 120); do kill -0 "$PID" 2>/dev/null || break; sleep 0.5; done',
+      'rm -rf "$OLD.viejo"; mv "$OLD" "$OLD.viejo" && mv "$NEW" "$OLD" || { rm -rf "$OLD"; mv "$OLD.viejo" "$OLD"; exit 1; }',
+      'rm -rf "$OLD.viejo"; xattr -cr "$OLD" 2>/dev/null', '[ "$OPEN" = "1" ] && open "$OLD"', 'exit 0', ''].join('\n'), { mode: 0o755 });
+    return { v, run: relaunch => { spawn('/bin/bash', [sh, String(process.pid), path.join(ex, nu), target, relaunch ? '1' : '0'], { detached: true, stdio: 'ignore' }).unref(); } };
+  }
+  throw new Error('sistema sin instalación automática');
+}
+let progBusy = false;
 async function checkProgram(manual) {
+  if (progBusy) return; progBusy = true;
   try {
     const rel = await latestRel(); if (!rel) return;
-    // la versión de la plataforma va en el nombre de sus instaladores (SampledHead-X.Y.Z-…), no en la etiqueta de la release
+    // la versión de la plataforma va en el nombre de sus instaladores (SampledHead-X.Y.Z-…); si hay varias, la más nueva
     const want = process.platform === 'win32' ? 'Windows-Setup.exe' : (process.arch === 'arm64' ? 'Mac-AppleSilicon.zip' : 'Mac-Intel.zip');
-    const asset = (rel.assets || []).find(x => /^SampledHead-[\d.]+-/.test(x.name) && x.name.endsWith(want)); if (!asset) return;
-    const v = asset.name.match(/^SampledHead-([\d.]+)-/)[1];
-    if (!newer(CFG.version, v)) return;
-    const seen = path.join(app.getPath('userData'), 'aviso-programa.txt'); let last = ''; try { last = fs.readFileSync(seen, 'utf8'); } catch (e) {}
-    if (last === v && !manual) return;
-    const q = await dialog.showMessageBox(win, { type: 'info', title: 'SampledHead', buttons: ['Descargar', 'Ahora no'], defaultId: 0, cancelId: 1,
-      message: 'Hay una versión nueva de la plataforma (v' + v + ')', detail: 'Tienes la v' + CFG.version + '. Las apps se actualizan solas; esta mejora es del propio programa y hay que instalarla una vez.' });
-    try { fs.writeFileSync(seen, v); } catch (e) {}
-    if (q.response === 0) shell.openExternal(asset.browser_download_url);
+    let asset = null, v = '';
+    for (const x of rel.assets || []) { const m = x.name.match(/^SampledHead-([\d.]+)-/); if (m && x.name.endsWith(want) && (!v || newer(v, m[1]))) { asset = x; v = m[1]; } }
+    if (!asset || !newer(CFG.version, v)) { if (manual) step('Plataforma al día (v' + CFG.version + ')'); return; }
+    if (!progPending || progPending.v !== v) {
+      try { progPending = await progPrepare(v, asset); }
+      catch (e) { log('aviso', 'actualización automática del programa: ' + e.message); progPending = null; return progNotice(v, asset, manual); }
+    }
+    if (!win) return;
+    const q = await dialog.showMessageBox(win, { type: 'info', title: 'SampledHead', buttons: ['Reiniciar ahora', 'Al cerrar'], defaultId: 0, cancelId: 1,
+      message: 'SampledHead v' + v + ' está lista', detail: 'Tienes la v' + CFG.version + '. Se instala sola: ahora (se cierra y se vuelve a abrir) o cuando cierres el programa. Tus apps y datos se conservan.' });
+    if (q.response === 0) { savePref(); progPending.run(true); progPending = null; app.quit(); }
   } catch (e) { log('aviso', 'comprobación del programa: ' + e.message); }
+  finally { progBusy = false; }
 }
+async function progNotice(v, asset, manual) {   // aviso de siempre si no se puede instalar sola
+  const seen = path.join(app.getPath('userData'), 'aviso-programa.txt'); let last = ''; try { last = fs.readFileSync(seen, 'utf8'); } catch (e) {}
+  if ((last === v && !manual) || !win) return;
+  const q = await dialog.showMessageBox(win, { type: 'info', title: 'SampledHead', buttons: ['Descargar', 'Ahora no'], defaultId: 0, cancelId: 1,
+    message: 'Hay una versión nueva de la plataforma (v' + v + ')', detail: 'Tienes la v' + CFG.version + '. No se ha podido instalar sola; descárgala e instálala una vez.' });
+  try { fs.writeFileSync(seen, v); } catch (e) {}
+  if (q.response === 0) shell.openExternal(asset.browser_download_url);
+}
+app.on('will-quit', () => { if (progPending) { try { progPending.run(false); step('Instalando la plataforma v' + progPending.v + ' al cerrar'); } catch (e) {} progPending = null; } });
 
 /* ---------------- ventana, inicio, apps y asa ---------------- */
 let win = null, home = null, handle = null, cur = null;

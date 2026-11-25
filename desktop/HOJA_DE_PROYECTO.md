@@ -163,8 +163,12 @@ Todas las apps de Windows/Mac en un solo programa (`desktop/suite/`). Las apps s
   suelta (`shapp://app/`). Sin pestañas: asa «SH» en el borde izquierdo (vuelve al inicio), Ctrl/Cmd+0 inicio,
   Ctrl/Cmd+1…9 apps, menú «Apps». Telón con el color y el icono de la app al cambiar. Las apps abiertas siguen vivas.
 - **Actualizaciones:** un `updater.js` por app (`userData/apps/<id>/contenido`): cada app se actualiza sola desde su repo;
-  si está a la vista se avisa y si no se recarga. Si una versión nueva no carga, vuelve a la anterior. El programa avisa
-  si hay un instalador nuevo de la plataforma (versión sacada del nombre `SampledHead-X.Y.Z-…`).
+  si está a la vista se avisa y si no se recarga. Si una versión nueva no carga, vuelve a la anterior. **Desde la 1.0.7 el
+  propio programa se actualiza solo**: al ver un instalador nuevo (`SampledHead-X.Y.Z-…`, el más nuevo de la lista) lo
+  descarga en `userData/programa-nuevo` y lo instala al pulsar «Reiniciar ahora» o al cerrar (Windows: NSIS silencioso
+  `/S --updated [--force-run]`; Mac: `ditto` + `instalar.sh` que espera a que se cierre, cambia el `.app` y quita la
+  cuarentena). Sin permiso de escritura o con error → aviso «Descargar» como antes. Hasta la 1.0.6 solo avisaba (y por
+  coger el primer instalador de la lista, 1.0.5, no llegaba a avisar; lo arregla `programa.json` filtrado).
 - **Interconexión:** `shared.js` con `appOf(wc)` y `openApp` → «Enviar a…» cambia de vista dentro de la plataforma.
   `apps.json` de la carpeta compartida apunta las apps al programa con `--app=<id>` (las apps sueltas también la abren).
 - **Importar de las apps sueltas:** copia `Local Storage`, `IndexedDB`, `databases` y `File System` de

@@ -159,7 +159,7 @@
       ]
     }
   ],
-  "suiteVersion": "1.0.6",
+  "suiteVersion": "1.0.7",
   "plugins": [
     {
       "id": "fuzzhead-vst",
