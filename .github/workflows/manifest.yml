@@ -5,6 +5,9 @@ on:
   schedule:
     - cron: "7,27,47 * * * *"
   workflow_dispatch:
+  workflow_run:            # en cuanto termina la compilación de una versión nueva (apps-vX.Y.Z), sin esperar al reloj
+    workflows: [apps]
+    types: [completed]
   push:
     branches: [main]
     paths: ["desktop/apps.json", "desktop/scripts/manifest.js", ".github/workflows/manifest.yml"]
