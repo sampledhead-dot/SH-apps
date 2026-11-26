@@ -82,6 +82,7 @@ public class SuiteActivity extends Activity {
 
     static class AppInfo { String id, name, desc, repo, color, sha; List<String> exclude = new ArrayList<>(); }
     static class AppView { String id; WebView web; boolean startOk; long used; }
+    final java.util.Map<WebView, UsbSerial> usbs = new java.util.HashMap<>();
 
     final Map<String, AppInfo> apps = new LinkedHashMap<>();
     final Map<String, Updater> upds = new HashMap<>();
@@ -267,7 +268,7 @@ public class SuiteActivity extends Activity {
     }
     void closeApp(String id) {
         AppView v = views.remove(id); if (v == null) return;
-        stage.removeView(v.web); v.web.destroy(); if (id.equals(current)) showHome();
+        stage.removeView(v.web); { UsbSerial us = usbs.remove(v.web); if (us != null) us.destroy(); } v.web.destroy(); if (id.equals(current)) showHome();
         Updater u = upds.get(id); if (u != null && u.pending() != null && u.applyNow()) updState.put(id, "aplicada");   // actualización que esperaba a que se cerrara
         step("Cerrada " + id); homeEvent("sh-estado");
     }
@@ -287,6 +288,7 @@ public class SuiteActivity extends Activity {
         s.setMixedContentMode(WebSettings.MIXED_CONTENT_NEVER_ALLOW);
         w.addJavascriptInterface(new Bridge(id == null ? "home" : id), "SHAndroid");
         w.addJavascriptInterface(new Suite(id == null ? "home" : id), "SHSuite");
+        UsbSerial us = new UsbSerial(this, w, this::log); usbs.put(w, us); w.addJavascriptInterface(us, "SHUsb");   // puerto serie USB (SP-404MKII)
         if (Build.VERSION.SDK_INT >= 26) w.setRendererPriorityPolicy(WebView.RENDERER_PRIORITY_IMPORTANT, false);
         if (WebViewFeature.isFeatureSupported(WebViewFeature.DOCUMENT_START_SCRIPT)) WebViewCompat.addDocumentStartJavaScript(w, INJECT, Collections.singleton("https://" + HOST));
         final String appId = id;
@@ -622,6 +624,7 @@ public class SuiteActivity extends Activity {
     }
     @Override protected void onDestroy() {
         try { stopService(new Intent(this, KeepAlive.class)); } catch (Throwable ignored) {}
+        for (UsbSerial us : usbs.values()) us.destroy(); usbs.clear();
         for (AppView v : views.values()) v.web.destroy(); views.clear(); if (home != null) { home.destroy(); home = null; }
         super.onDestroy();
     }

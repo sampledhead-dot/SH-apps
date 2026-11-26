@@ -58,6 +58,7 @@ import java.util.Map;
 public class MainActivity extends Activity {
     static final String TAG = "SampledHead";
     static final String HOST = "appassets.androidplatform.net";
+    UsbSerial usb;
     static final String START = "https://" + HOST + "/assets/web/index.html";
     static final int REQ_MIC = 11, REQ_FILE = 12;
 
@@ -323,6 +324,8 @@ public class MainActivity extends Activity {
         s.setMixedContentMode(WebSettings.MIXED_CONTENT_NEVER_ALLOW);
         WebView.setWebContentsDebuggingEnabled(true);
         web.addJavascriptInterface(new Bridge(), "SHAndroid");
+        usb = new UsbSerial(this, web, this::log);                 // 1.6.0: puerto serie USB (SP-404MKII por cable)
+        web.addJavascriptInterface(usb, "SHUsb");
         // 1.4.0: que Android no cierre la página al pasar a otra app (antes se perdía lo que estabas haciendo)
         if (Build.VERSION.SDK_INT >= 26) web.setRendererPriorityPolicy(WebView.RENDERER_PRIORITY_IMPORTANT, false);
         try { startForegroundService(new Intent(this, KeepAlive.class)); step("Servicio en segundo plano activo"); } catch (Throwable t) { log("aviso", "segundo plano: " + t); }
@@ -522,5 +525,5 @@ public class MainActivity extends Activity {
 
     @Override protected void onPause() { super.onPause(); if (web != null) web.onPause(); }
     @Override protected void onResume() { super.onResume(); if (web != null) web.onResume(); if (upd != null && upd.lastCheck() > 0 && System.currentTimeMillis() - upd.lastCheck() > 6 * 3600 * 1000L) checkUpdates(false); }
-    @Override protected void onDestroy() { try { stopService(new Intent(this, KeepAlive.class)); } catch (Throwable ignored) {} if (web != null) { web.destroy(); web = null; } super.onDestroy(); }
+    @Override protected void onDestroy() { if (usb != null) usb.destroy(); try { stopService(new Intent(this, KeepAlive.class)); } catch (Throwable ignored) {} if (web != null) { web.destroy(); web = null; } super.onDestroy(); }
 }

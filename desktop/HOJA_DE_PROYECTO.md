@@ -61,6 +61,7 @@ usa el micrófono o la interfaz de audio, MIDI y descargas (WAV, ZIP…) igual q
   intercepta esos clics y envía el archivo en trozos a Android, que lo guarda en *Descargas/<App>/*), enlaces externos
   al navegador, botón Atrás, service workers desactivados (los archivos ya están en el APK) e **informe de error**
   (.txt en Descargas/<App>/) si se cae la página o la app.
+- `UsbSerial.java` (apps-v1.6.0): puerto serie USB para la web (`window.SHUsb`), ver el historial.
 - `android/scripts/prepare.js` — copia la web, iconos (`android/icons/<id>/mipmap-*`) y datos de la app.
 - Firma: secretos `SH_ANDROID_KEYSTORE` (keystore en base64) y `SH_ANDROID_PASSWORD`; sin ellos, clave provisional
   `android/keystore/provisional.jks` (contraseña pública `sampledhead-provisional`). **Importante**: Android solo actualiza
@@ -189,6 +190,7 @@ Todas las apps de Windows/Mac en un solo programa (`desktop/suite/`). Las apps s
   importación con datos reales de las apps sueltas.
 
 ## Historial de versiones
+- **apps-v1.6.0** (26-11-2026): **puerto serie USB en los APK** (`android/template/.../UsbSerial.java`, `window.SHUsb`), en las apps sueltas y en la app única. Para TonoPad v15: conectar la Roland SP-404MKII por cable (CDC-ACM `0582:02E7`, 921600 baudios) y enviarle bancos. `SHUsb.list()`, `open(vid, pid, baud)` (pide permiso de USB a Android), `write(base64)`, `close()`; los datos llegan a la web con `window.__shUsbEv(tipo, texto)` ('open', 'data', 'closed'). Una sola conexión a la vez en todo el APK. Manifiesto: `uses-feature android.hardware.usb.host` no obligatorio. **Sin probar en un teléfono** (solo compilación en GitHub).
 - **1.6.1** (19-11-2026): plataforma 1.0.1 y paquetes 1.3.1: «Traer mis datos» acepta copias `.shdatos` de las versiones web.
 - **1.6.0** (19-11-2026): plataforma única SampledHead 1.0.0; Pop!Pads solo web y Android; paquetes 1.3.0 (`shared.js` admite la plataforma y abrir apps con argumentos).
 - **1.5.0** (19-11-2026): paquetes 1.2.0. Carpeta compartida Documentos/SampledHead (bandeja entre apps, modelos y motor local de IA), `preload.js` con `window.shDesktop`, abrir una app desde otra, autoprueba ampliada.
