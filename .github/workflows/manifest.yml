@@ -1,5 +1,7 @@
 # Publica la lista de archivos de cada app (release «actualizaciones») para que las apps instaladas se actualicen sin
 # usar la API de GitHub (límite de 60 consultas/hora por IP). Ver desktop/scripts/manifest.js.
+# Ojo: GitHub retrasa mucho los «schedule» (en la práctica, cada hora o más). Tras subir una app, si hay prisa, lánzalo a
+# mano (Actions → actualizaciones → Run workflow) o toca este archivo.
 name: actualizaciones
 on:
   schedule:
