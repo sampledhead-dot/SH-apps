@@ -188,7 +188,7 @@ async function createWindow() {
   await clearOldServiceWorkers(ses);
 
   // Permisos: micrófono/entrada de audio, MIDI, portapapeles y pantalla completa para la propia app
-  const ALLOWED = new Set(['media', 'midi', 'midiSysex', 'clipboard-read', 'clipboard-sanitized-write', 'fullscreen', 'notifications', 'speaker-selection']);
+  const ALLOWED = new Set(['media', 'midi', 'midiSysex', 'clipboard-read', 'clipboard-sanitized-write', 'fullscreen', 'notifications', 'speaker-selection', 'serial']);
   ses.setPermissionRequestHandler(async (wc, perm, cb, details) => {
     const ok = ALLOWED.has(perm) && isInternal(details.requestingUrl || wc.getURL());
     if (ok && perm === 'media' && process.platform === 'darwin' && (!details.mediaTypes || details.mediaTypes.includes('audio'))) {
@@ -199,6 +199,7 @@ async function createWindow() {
     cb(ok);
   });
   ses.setPermissionCheckHandler((wc, perm, origin) => ALLOWED.has(perm) && (origin || '').startsWith(SCHEME + '://'));
+  SHARED.serial(ses, o => o.startsWith(SCHEME + '://'), log);      // apps-v1.7.1: Web Serial (SP-404MKII por cable)
 
   // Descargas (WAV, ZIP, informes…): diálogo "Guardar como" en Descargas
   ses.on('will-download', (e, item) => {

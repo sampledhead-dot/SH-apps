@@ -199,13 +199,14 @@ function sessFor(id) {
   if (SESS[id]) return SESS[id];
   const ses = session.fromPartition('persist:' + id);
   ses.protocol.handle(SCHEME, serveFrom(() => UPD[id].dir()));
-  const ALLOWED = new Set(['media', 'midi', 'midiSysex', 'clipboard-read', 'clipboard-sanitized-write', 'fullscreen', 'notifications', 'speaker-selection']);
+  const ALLOWED = new Set(['media', 'midi', 'midiSysex', 'clipboard-read', 'clipboard-sanitized-write', 'fullscreen', 'notifications', 'speaker-selection', 'serial']);
   ses.setPermissionRequestHandler(async (wc, perm, cb, d) => {
     const ok = ALLOWED.has(perm) && String(d.requestingUrl || wc.getURL()).startsWith(SCHEME + '://');
     if (ok && perm === 'media' && process.platform === 'darwin') { try { cb(await systemPreferences.askForMediaAccess('microphone')); return; } catch (e) {} }
     cb(ok);
   });
   ses.setPermissionCheckHandler((wc, perm, origin) => ALLOWED.has(perm) && String(origin || '').startsWith(SCHEME + '://'));
+  SHARED.serial(ses, o => o.startsWith(SCHEME + '://'), (k, m) => log(k, id + ': ' + m));   // Web Serial (SP-404MKII por cable)
   ses.on('will-download', (e, item) => {
     if (SELFTEST) item.setSavePath(path.join(os.tmpdir(), 'sh-suite-dl-' + item.getFilename()));
     else item.setSaveDialogOptions({ defaultPath: path.join(app.getPath('downloads'), item.getFilename()) });

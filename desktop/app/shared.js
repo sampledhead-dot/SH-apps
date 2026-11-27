@@ -327,4 +327,35 @@ function setup(opts) {
   h('sh:backup:pending', wc => OPTS.pendingBackup ? OPTS.pendingBackup(OPTS.appOf ? OPTS.appOf(wc) : CFG.id) : null);
   app.on('before-quit', () => { if (ENG.proc) try { ENG.proc.kill(); } catch (e) {} });
 }
-module.exports = { setup, paths: () => ({ ROOT, BANDEJA, MODELOS, MOTOR }), engineStatus, download, run, readJson };
+
+// ---- Puerto serie USB (Web Serial) — apps-v1.7.1 ----
+// Electron no trae el selector de puertos de Chrome: sin esto, navigator.serial.requestPort() falla al momento con
+// «No port selected by the user». Elegimos nosotros el puerto pedido por los filtros de la web (TonoPad: la Roland
+// SP-404MKII, 0582:02E7) y, si aún no ha aparecido, esperamos unos segundos a que se conecte.
+function idIs(v, want) {         // Electron da el id en decimal («1410»); por si acaso, también en hexadecimal («0582»)
+  if (v == null || v === '') return false;
+  const t = String(v).trim().replace(/^0x/i, '');
+  return parseInt(t, 10) === want || parseInt(t, 16) === want;
+}
+function serial(ses, isInternal, log) {
+  log = log || (() => {});
+  const wanted = new WeakMap();   // webContents → filtros de la última petición
+  ses.on('select-serial-port', (event, portList, wc, callback) => {
+    event.preventDefault();
+    const filters = wanted.get(wc) || [{ usbVendorId: 0x0582, usbProductId: 0x02e7 }];
+    const match = p => filters.some(f => (f.usbVendorId == null || idIs(p.vendorId, f.usbVendorId)) && (f.usbProductId == null || idIs(p.productId, f.usbProductId))) || /SP-?404/i.test(p.displayName || '');
+    const desc = l => l.map(p => (p.displayName || p.portName || '?') + ' [' + p.vendorId + ':' + p.productId + ']').join(', ') || 'ninguno';
+    log('info', 'Puerto serie pedido; disponibles: ' + desc(portList));
+    let port = portList.find(match);
+    if (port) { log('info', 'Puerto serie elegido: ' + (port.displayName || port.portName)); callback(port.portId); return; }
+    let done = false;
+    const finish = id => { if (done) return; done = true; ses.removeListener('serial-port-added', onAdd); clearTimeout(t); callback(id || ''); };
+    const onAdd = (e, p) => { log('info', 'Puerto serie nuevo: ' + desc([p])); if (match(p)) finish(p.portId); };
+    ses.on('serial-port-added', onAdd);
+    const t = setTimeout(() => { log('aviso', 'No aparece el puerto serie pedido (' + JSON.stringify(filters) + ')'); finish(''); }, 6000);
+  });
+  ses.setDevicePermissionHandler(d => (d.deviceType === 'serial' || d.deviceType === 'usb') && isInternal(String(d.origin || '')));
+  return { want: (wc, filters) => wanted.set(wc, filters) };
+}
+
+module.exports = { serial, setup, paths: () => ({ ROOT, BANDEJA, MODELOS, MOTOR }), engineStatus, download, run, readJson };
