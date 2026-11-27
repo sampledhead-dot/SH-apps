@@ -326,6 +326,7 @@ public class MainActivity extends Activity {
         web.addJavascriptInterface(new Bridge(), "SHAndroid");
         usb = new UsbSerial(this, web, this::log);                 // 1.6.0: puerto serie USB (SP-404MKII por cable)
         web.addJavascriptInterface(usb, "SHUsb");
+        web.addJavascriptInterface(new LocalHttp(this, web, this::log), "SHNet");   // Melodee (MPC Sample) por USB-C
         // 1.4.0: que Android no cierre la página al pasar a otra app (antes se perdía lo que estabas haciendo)
         if (Build.VERSION.SDK_INT >= 26) web.setRendererPriorityPolicy(WebView.RENDERER_PRIORITY_IMPORTANT, false);
         try { startForegroundService(new Intent(this, KeepAlive.class)); step("Servicio en segundo plano activo"); } catch (Throwable t) { log("aviso", "segundo plano: " + t); }

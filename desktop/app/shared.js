@@ -288,6 +288,23 @@ async function engineRun(wc, reqId, task, input, params) {
   }
 }
 
+/* ---------------- 1.7.0: HTTP hacia Melodee (MPC Sample por USB-C) ----------------
+   La página no puede llamarla (http sin CORS); lo hace el programa. Solo melodee.local y 192.168.155.1. */
+function localHttp(method, url, bytes) {
+  return new Promise(resolve => {
+    let u; try { u = new URL(url); } catch (e) { return resolve({ status: -1, text: 'dirección no válida' }); }
+    if (u.protocol !== 'http:' || !['melodee.local', '192.168.155.1'].includes(u.hostname.toLowerCase())) return resolve({ status: -1, text: 'dirección no permitida' });
+    const body = bytes ? Buffer.from(bytes instanceof ArrayBuffer ? new Uint8Array(bytes) : bytes) : null, post = String(method).toUpperCase() === 'POST';
+    const req = require('http').request({ host: u.hostname, port: u.port || 80, path: u.pathname + u.search, method: post ? 'POST' : 'GET', timeout: 4000,
+      headers: post ? { 'Content-Type': 'application/octet-stream', 'Content-Length': body ? body.length : 0 } : {} }, res => {
+      const parts = []; res.on('data', d => parts.push(d)); res.on('end', () => { const t = Buffer.concat(parts); resolve({ status: res.statusCode, text: t.toString('utf8') }); });
+    });
+    req.on('timeout', () => { req.destroy(new Error('sin respuesta')); });
+    req.on('error', e => resolve({ status: -1, text: e.message }));
+    if (body) req.write(body); req.end();
+  });
+}
+
 /* ---------------- Conexión con la página (IPC) ---------------- */
 function setup(opts) {
   CFG = opts.cfg; log = opts.log; step = opts.step; OPTS = opts;
@@ -295,6 +312,7 @@ function setup(opts) {
   const h = (ch, fn) => ipcMain.handle(ch, async (e, ...a) => fn(e.sender, ...a));
   h('sh:info', wc => ({ appId: OPTS.appOf ? OPTS.appOf(wc) : CFG.id, platform: process.platform, folder: ROOT, version: CFG.wrapperVersion, suite: !!OPTS.appOf }));
   h('sh:bridge:put', (wc, to, items) => bridgePut(to, items));
+  h('sh:net', (wc, method, url, bytes) => localHttp(method, url, bytes));
   h('sh:bridge:list', (wc, me) => bridgeList(me));
   h('sh:bridge:remove', (wc, me, ids) => bridgeRemove(me, ids));
   h('sh:bridge:watch', (wc, me) => bridgeWatch(wc, me));

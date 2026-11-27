@@ -288,7 +288,7 @@ public class SuiteActivity extends Activity {
         s.setMixedContentMode(WebSettings.MIXED_CONTENT_NEVER_ALLOW);
         w.addJavascriptInterface(new Bridge(id == null ? "home" : id), "SHAndroid");
         w.addJavascriptInterface(new Suite(id == null ? "home" : id), "SHSuite");
-        UsbSerial us = new UsbSerial(this, w, this::log); usbs.put(w, us); w.addJavascriptInterface(us, "SHUsb");   // puerto serie USB (SP-404MKII)
+        UsbSerial us = new UsbSerial(this, w, this::log); usbs.put(w, us); w.addJavascriptInterface(us, "SHUsb"); w.addJavascriptInterface(new LocalHttp(this, w, this::log), "SHNet");   // puerto serie USB (SP-404MKII)
         if (Build.VERSION.SDK_INT >= 26) w.setRendererPriorityPolicy(WebView.RENDERER_PRIORITY_IMPORTANT, false);
         if (WebViewFeature.isFeatureSupported(WebViewFeature.DOCUMENT_START_SCRIPT)) WebViewCompat.addDocumentStartJavaScript(w, INJECT, Collections.singleton("https://" + HOST));
         final String appId = id;

@@ -81,3 +81,9 @@ proyectos. `SH.ui.menu(opts)` pinta el mismo menú lateral en todas las apps, co
 «Otras apps» (enviar, recibido con su número, abrir otra app) y «Copia de tus datos» los pone sh-core. Si la app usa
 `SH.ui.dock`, sus opciones pasan al menú y no sale el botón flotante «⇄ Apps». `SH.report` = informe .txt común
 (`install({me, version, options})`, `download()`). Botón: el de la app (`button: '#id'`) o `button: 'auto'` (☰ fijo arriba a la derecha).
+
+## Melodee (MPC Sample por USB-C) — sh-core 1.6.0 (27-11-2026)
+`SH.melodee`: hablar con la web de Melodee (firmware alternativo de la MPC Sample) en http://192.168.155.1 o http://melodee.local.
+- `can()` → hay conexión directa (programa de escritorio `shDesktop.net` o app Android `SHNet`). En el navegador no se puede (http sin CORS): `howTo` explica la alternativa (zip + pestaña Files de la web de Melodee, o la tarjeta SD).
+- `status()`, `list(carpeta)`, `mkdirs('A/B/C')`, `upload(carpeta, nombre, bytes)`, `freeName(carpeta, base, [extensiones])` (nombre que no choca), `send(carpeta, [{name:'sub/archivo', data}], onProg)` (crea las subcarpetas y sube).
+- Subir nunca sustituye: si el nombre existe, Melodee pone otro. Por eso las apps eligen antes un nombre libre (`freeName`).

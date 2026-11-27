@@ -30,6 +30,8 @@ contextBridge.exposeInMainWorld('shDesktop', {
     has: (url, name) => ipcRenderer.invoke('sh:models:has', url, name)
   },
   backup: { pending: () => ipcRenderer.invoke('sh:backup:pending') },
+  // 1.7.0: HTTP hacia Melodee (MPC Sample por USB-C); solo melodee.local y 192.168.155.1
+  net: { req: (method, url, bytes) => ipcRenderer.invoke('sh:net', method, url, bytes) },
   engine: {
     status: () => ipcRenderer.invoke('sh:engine:status'),
     install: (parts, cb) => withProg(id => ipcRenderer.invoke('sh:engine:install', parts, id), cb),
