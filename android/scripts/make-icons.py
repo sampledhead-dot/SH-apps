@@ -34,6 +34,7 @@ AJUSTE = {
     'spb':       {'dp': 88, 'fondo': (0.12, 0.5)},
     'fuzzhead':  {'dp': 72, 'fondo': '#D9600B'},
     'glitchhead': {'dp': 68, 'fondo': 'borde'},
+    'pockethead': {'dp': 80, 'fondo': 'borde'},
     'suite':     {'dp': 96, 'fondo': 'borde', 'src': 'icon-512.png'},   # app única SampledHead (Android): el icono del portal
 }
 DENS = {'mdpi': 1, 'hdpi': 1.5, 'xhdpi': 2, 'xxhdpi': 3, 'xxxhdpi': 4}

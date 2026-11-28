@@ -21,6 +21,7 @@ usa el micrófono o la interfaz de audio, MIDI y descargas (WAV, ZIP…) igual q
 | `tonopad` | TonoPad | Tono-Pad |
 | `fuzzhead` | FuzzHead | FuzzHead |
 | `glitchhead` | GlitchHead | GlitchHead (desde paquetes 1.3.11 / plataforma 1.0.5) |
+| `pockethead` | PocketHead | pockethead (desde paquetes 1.7.2 / plataforma 1.0.10) |
 
 
 ## Versión de Electron y macOS mínimo (1.3.4, 19-11-2026)
