@@ -1,10 +1,10 @@
-/* SampledHead · Portal de apps · v21: plugins para MPC Sample (Melodee): sección propia, ScratchHead y opción «MPC Sample» en CrazyHead, FuzzHead, GlitchHead y TapeHead · v20: nueva app PocketHead (presets por texto para Sonicake Pocket Master) · v18: la tarjeta «SampledHead» (todas las apps en una: Windows, Mac y Android) abre su hoja de descargas · v16 (cada tarjeta abre sus versiones: web, Windows, Mac, Android y VST)
+/* SampledHead · Portal de apps · v22: iconos de Chuleta, CrazyHead, Editor, PocketHead, Sample Pack Builder, TonoPad y Tuner con el estilo del logo · v21: plugins para MPC Sample (Melodee): sección propia, ScratchHead y opción «MPC Sample» en CrazyHead, FuzzHead, GlitchHead y TapeHead · v20: nueva app PocketHead (presets por texto para Sonicake Pocket Master) · v18: la tarjeta «SampledHead» (todas las apps en una: Windows, Mac y Android) abre su hoja de descargas · v16 (cada tarjeta abre sus versiones: web, Windows, Mac, Android y VST)
    Añadir una app: copia un bloque de APPS.
    Logos: cada vez que se abre el portal se lee el icono ACTUAL de cada app
    (su manifest.webmanifest o su archivo de logo). Si no se puede leer, se usa la
    copia guardada en icons/, y si tampoco, el emoji. */
 
-const VERSION = "v21";
+const VERSION = "v22";
 const BASE = "https://sampledhead-dot.github.io/";
 const MAIN_LOGO = "logo.png";
 const EYE_WHITE = "eye-white.png";
@@ -27,7 +27,7 @@ const APPS = [
     desc: "Sampler con generador de secuencias aleatorias, cuatro pistas y efectos. También VST3/AU (una pista) para tu DAW.", emoji: "🌀" },
   { name: "SampledHead Editor", dl: "SampledHead-Editor", url: BASE + "sampledhead-editor/", manifest: "manifest.webmanifest", local: "icons/editor.png",
     desc: "Editor de audio y masterización: recorta, limpia, separa stems con IA y exporta en WAV o MP3.", emoji: "🎚️" },
-  { name: "Sample Pack Builder", dl: "Sample-Pack-Builder", url: BASE + "spb-head/", liveIcon: "logo.svg", local: "icons/spb.svg",
+  { name: "Sample Pack Builder", dl: "Sample-Pack-Builder", url: BASE + "spb-head/", manifest: "manifest.json", local: "icons/spb.png",
     desc: "Sube una canción, separa stems y obtén breaks, loops, golpes, notas y acordes en un ZIP.", emoji: "📦" },
   { name: "Pop!Pads", dl: "PopPads", only: ["apk"], url: BASE + "poppads/", manifest: "manifest.webmanifest", local: "icons/poppads.png",
     desc: "Beat maker de pads para el móvil: graba tu ritmo, cuantiza y toca con tu propia voz.", emoji: "🎤" },
@@ -35,7 +35,7 @@ const APPS = [
     desc: "Buscador de atajos en castellano para SP-404MKII, MPC Sample (Akai y Melodee), Ableton Move, BOSS VE-22 y Sonicake Pocket Master.", emoji: "📋" },
   { name: "SampledHead Tuner", dl: "SampledHead-Tuner", vst: { repo: "Sampledhead-tuner", tag: "vst-v1.0.0", file: "SampledHead-Tuner-VST-1.0.0-Windows.zip" }, url: BASE + "Sampledhead-tuner/", manifest: "manifest.webmanifest", local: "icons/tuner.png",
     desc: "Afinador y acordes para tu instrumento, listo para usar desde el móvil.", emoji: "🎸" },
-  { name: "TonoPad", dl: "TonoPad", url: BASE + "Tono-Pad/", manifest: "manifest.webmanifest", local: "icons/tonopad.svg",
+  { name: "TonoPad", dl: "TonoPad", url: BASE + "Tono-Pad/", manifest: "manifest.webmanifest", local: "icons/tonopad.png",
     desc: "Detecta el tono y la escala de un audio y genera bancos de 16 pads afinados para SP-404MKII, Move, MPC Sample y Live.", emoji: "🎹" },
   { name: "FuzzHead", dl: "FuzzHead", mpc: { file: "FuzzHead-0.2.0-melodee.zip", v: "0.2.0", size: 206027, kind: "Efecto", desc: "Guitarra o bajo a sintetizador: 5 motores, distorsión, crush, ring y reverb. El más pesado: úsalo en una sola pista." }, vst: { repo: "FuzzHead", tag: "vst-v1.0.1", file: "FuzzHead-VST-1.0.1-Windows.zip" }, url: BASE + "FuzzHead/", manifest: "manifest.webmanifest", local: "icons/fuzzhead.png",
     desc: "Convierte tu guitarra o bajo en sintetizador: 5 motores, distorsión, bitcrush, ring mod y gated reverb.", emoji: "🎛️" },

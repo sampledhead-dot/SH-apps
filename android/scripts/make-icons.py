@@ -25,16 +25,13 @@ APPS = json.load(open(os.path.join(ROOT, 'desktop', 'apps.json')))['apps']
 #  - "circulo": FuzzHead, círculo naranja con etiqueta → fondo naranja y algo más pequeño para que la etiqueta no se corte
 AJUSTE = {
     'sampler':   {'dp': 80, 'fondo': 'borde'},
-    'crazyhead': {'dp': 80, 'fondo': 'borde'},
     'poppads':   {'dp': 80, 'fondo': 'borde'},
-    'tuner':     {'dp': 80, 'fondo': 'borde'},
-    'editor':    {'dp': 78, 'fondo': (0.5, 0.06)},
-    'tonopad':   {'dp': 80, 'fondo': (0.5, 0.06)},
-    'chuleta':   {'dp': 84, 'fondo': (0.5, 0.12)},
-    'spb':       {'dp': 88, 'fondo': (0.12, 0.5)},
     'fuzzhead':  {'dp': 72, 'fondo': '#D9600B'},
+    # 28-11-2026: iconos nuevos con el estilo del logo (círculo naranja + aparato en crema + pegatina), igual que FuzzHead
+    'crazyhead': {'dp': 72, 'fondo': '#D9600B'}, 'editor': {'dp': 72, 'fondo': '#D9600B'}, 'tonopad': {'dp': 72, 'fondo': '#D9600B'},
+    'chuleta': {'dp': 72, 'fondo': '#D9600B'}, 'spb': {'dp': 72, 'fondo': '#D9600B'}, 'tuner': {'dp': 72, 'fondo': '#D9600B'},
+    'pockethead': {'dp': 72, 'fondo': '#D9600B'},
     'glitchhead': {'dp': 68, 'fondo': 'borde'},
-    'pockethead': {'dp': 80, 'fondo': 'borde'},
     'suite':     {'dp': 96, 'fondo': 'borde', 'src': 'icon-512.png'},   # app única SampledHead (Android): el icono del portal
 }
 DENS = {'mdpi': 1, 'hdpi': 1.5, 'xhdpi': 2, 'xxhdpi': 3, 'xxxhdpi': 4}
