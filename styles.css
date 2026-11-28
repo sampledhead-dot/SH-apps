@@ -216,3 +216,14 @@ body.sheet-open { overflow: hidden; }
 .suite b { display: block; font-size: 19px; }
 .suite span { font-size: 14px; opacity: .9; }
 .suite:hover { transform: translate(-2px,-3px) rotate(0); }
+
+/* v21: sección de plugins para MPC Sample (Melodee) */
+.sec-title { margin: 46px 0 6px; font-family: "Arial Black", Impact, system-ui, sans-serif; font-size: 1.5rem; font-weight: 900;
+  text-transform: uppercase; letter-spacing: -.3px; color: var(--paper); scroll-margin-top: 16px; }
+.sec-title small { display: inline-block; margin-left: 6px; padding: 3px 10px; font-family: system-ui, sans-serif; font-size: .8rem;
+  font-weight: 800; letter-spacing: .4px; background: var(--ink); color: var(--paper); transform: rotate(-1.5deg); vertical-align: middle; }
+.sec-sub { margin: 0 0 18px; max-width: 760px; color: var(--paper); opacity: .92; font-size: .95rem; }
+.sec-sub b, .sec-sub i { color: var(--paper); }
+.mpc-link { display: inline-block; margin: -8px 0 22px; padding: 8px 14px; font-weight: 800; color: var(--ink); background: var(--paper);
+  border: 3px solid var(--ink); border-radius: 12px; box-shadow: 4px 4px 0 var(--ink); text-decoration: none; transform: rotate(.5deg); }
+.mpc-link:hover { transform: translate(-2px,-2px) rotate(0); }

@@ -32,7 +32,11 @@
     <a class="suite" href="https://github.com/sampledhead-dot/SH-apps/releases/latest" target="_blank" rel="noopener">
       <b>💻📱 SampledHead: todas las apps en una</b><span>Para Windows, Mac y Android: eliges cuáles tener, pasas de una a otra al momento y cada una se actualiza sola. En el ordenador, también los plugins VST/AU ›</span>
     </a>
+    <a class="mpc-link" href="#mpc">🎚️ Plugins para MPC Sample (Melodee): ScratchHead y más ›</a>
     <section id="apps" class="grid" aria-label="Lista de apps"></section>
+    <h2 class="sec-title" id="mpc">🎚️ Plugins para MPC Sample <small>con firmware Melodee</small></h2>
+    <p class="sec-sub">Instrumentos y efectos de Sampled Head que funcionan dentro de la MPC Sample. Copia el zip, sin descomprimir, en la carpeta <b>Melodee/Plugins</b> de la tarjeta (o súbelo desde <i>melodee.local</i>) y reinicia.</p>
+    <section id="mpc-apps" class="grid" aria-label="Plugins para MPC Sample"></section>
   </main>
 
   <dialog id="sheet" class="sheet" aria-labelledby="sh-name">
@@ -46,6 +50,10 @@
       <h3 id="sh-dlh">Descargar e instalar</h3>
       <p id="sh-state" class="sh-state"></p>
       <div id="sh-dl" class="opts"></div>
+      <div id="sh-mpc" hidden>
+        <h3>Plugin para MPC Sample (Melodee)</h3>
+        <div id="sh-mpclist" class="opts"></div>
+      </div>
       <div id="sh-vst" hidden>
         <h3>Plugin para tu DAW</h3>
         <div id="sh-vstlist" class="opts"></div>
@@ -57,6 +65,7 @@
           <li><b>Mac:</b> descomprime el .zip y mueve la app a Aplicaciones. La primera vez ábrela con <i>clic derecho → Abrir</i>. Si dice que está dañada: Ajustes del Sistema → Privacidad y seguridad → <i>Abrir igualmente</i>.</li>
           <li><b>Android:</b> abre el .apk descargado y permite «instalar apps desconocidas» para tu navegador o gestor de archivos.</li>
           <li><b>iPhone / iPad:</b> usa la versión web y, en Safari, <i>Compartir → Añadir a pantalla de inicio</i>.</li>
+          <li><b>MPC Sample (Melodee):</b> copia el zip tal cual, sin descomprimir, en <i>Melodee/Plugins</i> de la tarjeta (o arrástralo en <i>http://melodee.local</i> › Device › Plug-ins) y reinicia. Los efectos van en la cadena de una pista, bus o master; ScratchHead y CrazyHead en una pista de plugin. Necesita Melodee 0.9 o posterior.</li>
           <li><b>VST:</b> copia la carpeta .vst3 del zip en <i>C:\Program Files\Common Files\VST3</i> y reescanea plugins en tu DAW. En Mac: <i>~/Biblioteca/Audio/Plug-Ins/VST3</i> (y el .component en <i>Components</i> para Logic). En el zip va también la versión Standalone.</li>
         </ul>
       </details>

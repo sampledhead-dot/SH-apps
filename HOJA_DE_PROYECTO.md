@@ -23,6 +23,21 @@ Al pulsar una tarjeta se abre una hoja con todas las versiones de esa app:
 - Desplegable «¿Cómo se instala?» con los avisos de Windows SmartScreen, Mac (clic derecho → Abrir), Android (apps desconocidas), iPhone (web) y VST.
 - Cerrar: ✕, tecla Esc o tocar fuera. En móvil sale como hoja desde abajo.
 
+## Plugins para MPC Sample · Melodee (v21, 28-11-2026)
+- Petición del usuario: los plugins de Sampled Head para la MPC Sample (firmware Melodee) descargables desde el portal.
+- Los zips están en este repo, carpeta `melodee/` (se sirven por GitHub Pages: `MPC_BASE` = `…/SH-apps/melodee/`).
+  No se usan releases porque la sesión no puede crear releases por la API. Versiones actuales: ScratchHead 0.9.0,
+  CrazyHead, FuzzHead, GlitchHead y TapeHead 0.2.0.
+- `APPS[].mpc = { file, v, size, kind, desc }`: la hoja de la app muestra «Plugin para MPC Sample (Melodee)»
+  (CrazyHead, FuzzHead, GlitchHead, TapeHead). **ScratchHead** tiene tarjeta propia (`mpcOnly`): su hoja abre la guía de
+  Chuleta Beat y la descarga.
+- Sección nueva «Plugins para MPC Sample» (`#mpc`, debajo de las apps) con una tarjeta por plugin (ScratchHead primero) y
+  enlace «🎚️ Plugins para MPC Sample (Melodee)» encima de las apps. Enlace directo: `…/SH-apps/#app=scratchhead`.
+- **Al publicar una versión nueva de un plugin de Melodee**: copiar el zip a `melodee/`, borrar el viejo y cambiar
+  `file`, `v` y `size` en `APPS`; regenerar `portal-standalone.html`; subir `C` en `sw.js`.
+- Código de los plugins: hojas `Plugins_Melodee_HOJA_DE_PROYECTO.md` y `ScratchHead_HOJA_DE_PROYECTO.md` (proyecto de Claude).
+- No están en la app de escritorio/Android (`desktop/apps.json`): un plugin de la MPC no se instala en el ordenador.
+
 ## Iconos que se actualizan solos
 Al abrir el portal, `app.js` lee en directo el `manifest.webmanifest` de cada app (o su `logo.svg` en el caso de Sample Pack Builder), toma el icono "any" más grande y lo muestra. Si cambias el icono en una app y la subes a GitHub Pages, el portal lo muestra sin tocar nada. Orden de preferencia: icono vivo → copia en `icons/` → emoji.
 Requisitos: el portal debe estar en un dominio que pueda leer las apps (GitHub Pages envía CORS abierto, vale desde cualquier sitio). Si una app deja de declarar su icono en el manifest, el portal no se entera.

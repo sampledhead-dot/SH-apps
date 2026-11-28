@@ -1,11 +1,11 @@
 /* SampledHead Portal · service worker v11
    Solo guarda en caché los archivos del propio portal. Las demás apps (y la lectura en
    directo de sus iconos) pasan siempre directas a la red, sin tocarlas. */
-const C = 'sampledhead-portal-v20';
+const C = 'sampledhead-portal-v21';
 const FILES = ['./', 'index.html', 'styles.css', 'app.js', 'logo.png', 'manifest.webmanifest',
   'eye-white.png', 'eye-pupil.png', 'eye-lid.png', 'icon-192.png', 'icon-512.png',
   'icons/sampledhead-app.png', 'icons/crazyhead.png', 'icons/editor.png', 'icons/spb.svg',
-  'icons/poppads.png', 'icons/chuleta-beat.png', 'icons/tuner.png', 'icons/tonopad.svg', 'icons/fuzzhead.png', 'icons/tapehead.png', 'icons/pockethead.png'];
+  'icons/poppads.png', 'icons/chuleta-beat.png', 'icons/tuner.png', 'icons/tonopad.svg', 'icons/fuzzhead.png', 'icons/tapehead.png', 'icons/pockethead.png', 'icons/scratchhead.png'];
 const SHELL = new Set(FILES.map(f => new URL(f, self.registration.scope).href));
 
 self.addEventListener('install', e => {

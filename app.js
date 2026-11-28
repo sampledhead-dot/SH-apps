@@ -1,10 +1,10 @@
-/* SampledHead · Portal de apps · v20: nueva app PocketHead (presets por texto para Sonicake Pocket Master) · v18: la tarjeta «SampledHead» (todas las apps en una: Windows, Mac y Android) abre su hoja de descargas · v16 (cada tarjeta abre sus versiones: web, Windows, Mac, Android y VST)
+/* SampledHead · Portal de apps · v21: plugins para MPC Sample (Melodee): sección propia, ScratchHead y opción «MPC Sample» en CrazyHead, FuzzHead, GlitchHead y TapeHead · v20: nueva app PocketHead (presets por texto para Sonicake Pocket Master) · v18: la tarjeta «SampledHead» (todas las apps en una: Windows, Mac y Android) abre su hoja de descargas · v16 (cada tarjeta abre sus versiones: web, Windows, Mac, Android y VST)
    Añadir una app: copia un bloque de APPS.
    Logos: cada vez que se abre el portal se lee el icono ACTUAL de cada app
    (su manifest.webmanifest o su archivo de logo). Si no se puede leer, se usa la
    copia guardada en icons/, y si tampoco, el emoji. */
 
-const VERSION = "v20";
+const VERSION = "v21";
 const BASE = "https://sampledhead-dot.github.io/";
 const MAIN_LOGO = "logo.png";
 const EYE_WHITE = "eye-white.png";
@@ -15,11 +15,15 @@ const LIVE_TIMEOUT_MS = 6000;
    la hoja remite a la página de descargas de GitHub. */
 const GH = "https://github.com/sampledhead-dot/";
 const GH_API = "https://api.github.com/repos/sampledhead-dot/";
+/* v21: plugins para la MPC Sample con el firmware Melodee (CLAP para su procesador ARM). Los zips están en este mismo
+   repo, carpeta melodee/ (se sirven con GitHub Pages). Al publicar una versión nueva: copiar el zip a melodee/ y cambiar
+   file/v/size del plugin en APPS. */
+const MPC_BASE = BASE + "SH-apps/melodee/";
 
 const APPS = [
   { name: "SampledHead App", dl: "SampledHead-App", url: BASE + "sampledhead-app/", manifest: "manifest.webmanifest", local: "icons/sampledhead-app.png",
     desc: "Sampler de pads en el navegador: graba, edita, haz loops y exporta a Koala, Ableton, MPC y SP-404.", emoji: "🥁" },
-  { name: "CrazyHead", dl: "CrazyHead", vst: { repo: "CrazyHead-VST", tag: "vst-v1.0.0", file: "CrazyHead-VST-1.0.0-Windows.zip" }, url: BASE + "CrazyHead/", manifest: "manifest.webmanifest", local: "icons/crazyhead.png",
+  { name: "CrazyHead", dl: "CrazyHead", mpc: { file: "CrazyHead-0.2.0-melodee.zip", v: "0.2.0", size: 681162, kind: "Instrumento", desc: "Trocea un loop de la tarjeta y toca un patrón al azar con el tempo de Melodee. Pads A01–A16 = trozos." }, vst: { repo: "CrazyHead-VST", tag: "vst-v1.0.0", file: "CrazyHead-VST-1.0.0-Windows.zip" }, url: BASE + "CrazyHead/", manifest: "manifest.webmanifest", local: "icons/crazyhead.png",
     desc: "Sampler con generador de secuencias aleatorias, cuatro pistas y efectos. También VST3/AU (una pista) para tu DAW.", emoji: "🌀" },
   { name: "SampledHead Editor", dl: "SampledHead-Editor", url: BASE + "sampledhead-editor/", manifest: "manifest.webmanifest", local: "icons/editor.png",
     desc: "Editor de audio y masterización: recorta, limpia, separa stems con IA y exporta en WAV o MP3.", emoji: "🎚️" },
@@ -33,16 +37,21 @@ const APPS = [
     desc: "Afinador y acordes para tu instrumento, listo para usar desde el móvil.", emoji: "🎸" },
   { name: "TonoPad", dl: "TonoPad", url: BASE + "Tono-Pad/", manifest: "manifest.webmanifest", local: "icons/tonopad.svg",
     desc: "Detecta el tono y la escala de un audio y genera bancos de 16 pads afinados para SP-404MKII, Move, MPC Sample y Live.", emoji: "🎹" },
-  { name: "FuzzHead", dl: "FuzzHead", vst: { repo: "FuzzHead", tag: "vst-v1.0.1", file: "FuzzHead-VST-1.0.1-Windows.zip" }, url: BASE + "FuzzHead/", manifest: "manifest.webmanifest", local: "icons/fuzzhead.png",
+  { name: "FuzzHead", dl: "FuzzHead", mpc: { file: "FuzzHead-0.2.0-melodee.zip", v: "0.2.0", size: 206027, kind: "Efecto", desc: "Guitarra o bajo a sintetizador: 5 motores, distorsión, crush, ring y reverb. El más pesado: úsalo en una sola pista." }, vst: { repo: "FuzzHead", tag: "vst-v1.0.1", file: "FuzzHead-VST-1.0.1-Windows.zip" }, url: BASE + "FuzzHead/", manifest: "manifest.webmanifest", local: "icons/fuzzhead.png",
     desc: "Convierte tu guitarra o bajo en sintetizador: 5 motores, distorsión, bitcrush, ring mod y gated reverb.", emoji: "🎛️" },
-  { name: "GlitchHead", dl: "GlitchHead", vst: { repo: "GlitchHead", tag: "vst-v1.0.0", file: "GlitchHead-VST-1.0.0-Windows.zip" }, url: BASE + "GlitchHead/", manifest: "manifest.webmanifest", local: "icons/glitchhead.png",
+  { name: "GlitchHead", dl: "GlitchHead", mpc: { file: "GlitchHead-0.2.0-melodee.zip", v: "0.2.0", size: 181355, kind: "Efecto", desc: "Shred, Haze y Split en cadena, con sus 20 presets." }, vst: { repo: "GlitchHead", tag: "vst-v1.0.0", file: "GlitchHead-VST-1.0.0-Windows.zip" }, url: BASE + "GlitchHead/", manifest: "manifest.webmanifest", local: "icons/glitchhead.png",
     desc: "Tres efectos salvajes en cadena: Shred trocea en wavesets, Haze crea texturas con memoria y Split parte la señal con una puerta. También VST3/AU.", emoji: "⚡" },
   { name: "PocketHead", dl: "PocketHead", url: BASE + "pockethead/", manifest: "manifest.webmanifest", local: "icons/pockethead.png",
     desc: "Presets para el Sonicake Pocket Master describiendo el sonido: IA Gemini gratis, tu afinación y tu biblioteca de presets (.prst).", emoji: "📟" },
   /* v15: TapeHead es solo plugin (sin web propia): la tarjeta abre la hoja con el VST y el enlace a TonoPad, que lo lleva dentro */
-  { name: "TapeHead", dl: "TapeHead", vstOnly: true, vst: { repo: "TapeHead", tag: "vst-v1.0.0", file: "TapeHead-VST-1.0.0-Windows.zip" }, local: "icons/tapehead.png",
+  { name: "TapeHead", dl: "TapeHead", vstOnly: true, mpc: { file: "TapeHead-0.2.0-melodee.zip", v: "0.2.0", size: 177502, kind: "Efecto", desc: "Previo de casete: satura y engorda pistas, buses o el master. 25 presets." }, vst: { repo: "TapeHead", tag: "vst-v1.0.0", file: "TapeHead-VST-1.0.0-Windows.zip" }, local: "icons/tapehead.png",
     alt: { url: BASE + "Tono-Pad/", t: "Probar en TonoPad (navegador)", s: "TapeHead va dentro de TonoPad como efecto de los pads. Sin instalar nada." },
-    desc: "Plugin VST3/AU: la entrada de una multipista de casete de los 80. Satura y engorda guitarras, bajos y baterías (presets punk, post-punk, grunge, noise…).", emoji: "📼" }
+    desc: "Plugin VST3/AU: la entrada de una multipista de casete de los 80. Satura y engorda guitarras, bajos y baterías (presets punk, post-punk, grunge, noise…).", emoji: "📼" },
+  /* v21: ScratchHead es solo para la MPC Sample (Melodee): la tarjeta abre la hoja con su descarga */
+  { name: "ScratchHead", dl: "ScratchHead", mpcOnly: true, local: "icons/scratchhead.png",
+    mpc: { file: "ScratchHead-0.9.0-melodee.zip", v: "0.9.0", size: 34434060, kind: "Instrumento", desc: "Scratch de vinilo: el fader mueve el sonido del pad como un plato. Pad A04 = corte del crossfader. Trae sonidos de scratch." },
+    alt: { url: BASE + "Chuleta-beat/", t: "Guía en Chuleta Beat", s: "Busca «ScratchHead» en la MPC Sample con firmware Melodee: instalar, scratch, pad de corte, recetas." },
+    desc: "Plugin para la MPC Sample (firmware Melodee): scratch de vinilo con el fader, pad de corte tipo crossfader, preescucha y sonidos de scratch de serie.", emoji: "💿" }
 ];
 
 /* ---------- Registro para el informe de error ---------- */
@@ -237,7 +246,7 @@ function initInstall() {
   if (/iphone|ipad|ipod/i.test(navigator.userAgent) && !/crios|fxios/i.test(navigator.userAgent)) { box.hidden = false; ios.hidden = false; }
 }
 
-function createCard(app) {
+function createCard(app, mpc) {
   const a = document.createElement("button");
   a.type = "button"; a.className = "card";
   a.setAttribute("aria-label", app.name + ": abrir o descargar");
@@ -251,7 +260,7 @@ function createCard(app) {
 
   const info = document.createElement("div"); info.className = "info";
   const h2 = document.createElement("h2"); h2.textContent = app.name;
-  const p = document.createElement("p"); p.textContent = app.desc;
+  const p = document.createElement("p"); p.textContent = mpc ? app.mpc.kind + " · " + app.mpc.desc : app.desc;
   info.append(h2, p);
 
   const arrow = document.createElement("span");
@@ -259,7 +268,7 @@ function createCard(app) {
 
   a.append(fallback, info, arrow);
   loadIcon(app, img, fallback);
-  app._img = img;
+  if (!app._img || !mpc) app._img = img;
   return a;
 }
 
@@ -349,19 +358,21 @@ async function openSheet(app) {
   const web = document.getElementById("sh-web"); web.innerHTML = "";
   if (app.url) web.appendChild(optEl({ ico: "🌐", t: "Abrir versión web", s: "En el navegador, sin instalar nada. Funciona en móvil, tablet y ordenador.", url: app.url, primary: true, mine: OS === "ios" || OS === "linux" }));
   else if (app.alt) web.appendChild(optEl({ ico: "🌐", t: app.alt.t, s: app.alt.s, url: app.alt.url, primary: true }));
-  document.getElementById("sh-dlh").style.display = app.vstOnly ? "none" : "";
+  document.getElementById("sh-dlh").style.display = (app.vstOnly || app.mpcOnly) ? "none" : "";
+  showMpc(app);
 
   const list = document.getElementById("sh-dl"), state = document.getElementById("sh-state");
   list.innerHTML = ""; state.textContent = "Buscando las últimas versiones…"; state.hidden = false;
   document.getElementById("sh-vst").hidden = !app.vst;
   const vbox = document.getElementById("sh-vstlist"); vbox.innerHTML = "";
-  document.getElementById("sh-all").href = GH + (app.vstOnly ? app.vst.repo : "SH-apps") + "/releases/latest";
+  document.getElementById("sh-all").href = app.mpcOnly ? GH + "SH-apps/tree/main/melodee" : GH + (app.vstOnly ? app.vst.repo : "SH-apps") + "/releases/latest";
   location.hash = "app=" + slug(app);
   if (!dlg.open) { if (dlg.showModal) dlg.showModal(); else dlg.setAttribute("open", ""); }
   document.body.classList.add("sheet-open");
 
   const opts = [];
   if (app.vstOnly) { state.hidden = true; await showVst(app); return; }
+  if (app.mpcOnly) { state.hidden = true; return; }
   const rel = await appsRelease();
   if (sheetApp !== app) return;
   KINDS.forEach(k => {
@@ -389,6 +400,14 @@ async function showVst(app) {
       meta: [a.tag.replace("vst-", ""), fmtSize(a.size)].filter(Boolean).join(" · "), mine: !!app.vstOnly && os === OS }));
   });
 }
+/* v21: plugin para la MPC Sample (Melodee) */
+function showMpc(app) {
+  const box = document.getElementById("sh-mpc"), list = document.getElementById("sh-mpclist");
+  list.innerHTML = ""; box.hidden = !app.mpc;
+  if (!app.mpc) return;
+  list.appendChild(optEl({ ico: "🎚️", t: app.mpc.kind + " para MPC Sample · Melodee", s: app.mpc.desc + " Copia el zip, sin descomprimir, en Melodee/Plugins de la tarjeta.",
+    url: MPC_BASE + app.mpc.file, download: true, meta: ["v" + app.mpc.v, fmtSize(app.mpc.size)].filter(Boolean).join(" · "), primary: !!app.mpcOnly }));
+}
 function closeSheet() {
   const dlg = document.getElementById("sheet");
   sheetApp = null;
@@ -414,6 +433,9 @@ try {
   step("pintando tarjetas");
   const grid = document.getElementById("apps");
   APPS.forEach(app => grid.appendChild(createCard(app)));
+  step("plugins MPC Sample");
+  const mgrid = document.getElementById("mpc-apps");
+  if (mgrid) APPS.filter(a => a.mpc).sort((a, b) => (b.mpcOnly ? 1 : 0) - (a.mpcOnly ? 1 : 0)).forEach(app => mgrid.appendChild(createCard(app, true)));
   step("logo principal");
   document.getElementById("main-logo").src = MAIN_LOGO;
   step("ojo animado");
