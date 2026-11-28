@@ -28,7 +28,7 @@ const APPS = [
   { name: "Pop!Pads", dl: "PopPads", only: ["apk"], url: BASE + "poppads/", manifest: "manifest.webmanifest", local: "icons/poppads.png",
     desc: "Beat maker de pads para el móvil: graba tu ritmo, cuantiza y toca con tu propia voz.", emoji: "🎤" },
   { name: "Chuleta Beat", dl: "Chuleta-Beat", url: BASE + "Chuleta-beat/", manifest: "manifest.webmanifest", local: "icons/chuleta-beat.png",
-    desc: "Buscador de atajos en castellano para SP-404MKII, MPC Sample, Ableton Move y BOSS VE-22.", emoji: "📋" },
+    desc: "Buscador de atajos en castellano para SP-404MKII, MPC Sample (Akai y Melodee), Ableton Move, BOSS VE-22 y Sonicake Pocket Master.", emoji: "📋" },
   { name: "SampledHead Tuner", dl: "SampledHead-Tuner", vst: { repo: "Sampledhead-tuner", tag: "vst-v1.0.0", file: "SampledHead-Tuner-VST-1.0.0-Windows.zip" }, url: BASE + "Sampledhead-tuner/", manifest: "manifest.webmanifest", local: "icons/tuner.png",
     desc: "Afinador y acordes para tu instrumento, listo para usar desde el móvil.", emoji: "🎸" },
   { name: "TonoPad", dl: "TonoPad", url: BASE + "Tono-Pad/", manifest: "manifest.webmanifest", local: "icons/tonopad.svg",
