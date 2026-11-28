@@ -1,5 +1,5 @@
 {
-  "wrapperVersion": "1.7.3",
+  "wrapperVersion": "1.7.4",
   "electronVersion": "45.3.4",
   "electronVersionMac": "43.8.12",
   "apps": [
@@ -173,7 +173,7 @@
       ]
     }
   ],
-  "suiteVersion": "1.0.11",
+  "suiteVersion": "1.0.12",
   "plugins": [
     {
       "id": "fuzzhead-vst",

@@ -1,0 +1,56 @@
+{
+ "nota": "Lista de plugins para la MPC Sample (Melodee) que leen los programas de escritorio y Android (y su copia incluida al compilar). Al publicar una versión nueva de un plugin: copiar el zip aquí y cambiar file, v y size aquí y en app.js / portal-standalone.html.",
+ "base": "https://sampledhead-dot.github.io/SH-apps/melodee/",
+ "plugins": [
+  {
+   "id": "scratchhead",
+   "name": "ScratchHead",
+   "icon": "scratchhead",
+   "file": "ScratchHead-0.9.0-melodee.zip",
+   "v": "0.9.0",
+   "size": 34434060,
+   "kind": "Instrumento",
+   "desc": "Scratch de vinilo: el fader mueve el sonido del pad como un plato. Pad A04 = corte del crossfader. Trae sonidos de scratch."
+  },
+  {
+   "id": "crazyhead",
+   "name": "CrazyHead",
+   "icon": "crazyhead",
+   "file": "CrazyHead-0.2.0-melodee.zip",
+   "v": "0.2.0",
+   "size": 681162,
+   "kind": "Instrumento",
+   "desc": "Trocea un loop de la tarjeta y toca un patrón al azar con el tempo de Melodee. Pads A01–A16 = trozos."
+  },
+  {
+   "id": "fuzzhead",
+   "name": "FuzzHead",
+   "icon": "fuzzhead",
+   "file": "FuzzHead-0.2.0-melodee.zip",
+   "v": "0.2.0",
+   "size": 206027,
+   "kind": "Efecto",
+   "desc": "Guitarra o bajo a sintetizador: 5 motores, distorsión, crush, ring y reverb. El más pesado: úsalo en una sola pista."
+  },
+  {
+   "id": "glitchhead",
+   "name": "GlitchHead",
+   "icon": "glitchhead",
+   "file": "GlitchHead-0.2.0-melodee.zip",
+   "v": "0.2.0",
+   "size": 181355,
+   "kind": "Efecto",
+   "desc": "Shred, Haze y Split en cadena, con sus 20 presets."
+  },
+  {
+   "id": "tapehead",
+   "name": "TapeHead",
+   "icon": "tapehead",
+   "file": "TapeHead-0.2.0-melodee.zip",
+   "v": "0.2.0",
+   "size": 177502,
+   "kind": "Efecto",
+   "desc": "Previo de casete: satura y engorda pistas, buses o el master. 25 presets."
+  }
+ ]
+}

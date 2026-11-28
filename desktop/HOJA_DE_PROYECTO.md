@@ -226,3 +226,7 @@ Todas las apps de Windows/Mac en un solo programa (`desktop/suite/`). Las apps s
 - Sin actualizaciones automáticas dentro del programa: las versiones nuevas se descargan de Releases.
 - Iconos: copiados en `icons/`; si una app cambia de icono hay que regenerar el suyo.
 - No es un plugin VST: las versiones VST/AU están pendientes (siguiente paso: Tuner).
+
+## Plataforma 1.0.12 (28-11-2026)
+- Apps nuevas: `PREF.known` en `eleccion.json`; las apps de `apps.json` que no estén en `known` se añaden a `PREF.apps` al arrancar (migración: `NEW_APPS = ['pockethead']`).
+- Inicio: sección «Plugins para MPC Sample (Melodee)» (`home:mpcList` lee `melodee/plugins.json` en línea o `CFG.mpc`; `home:mpc(file, base, toCard)` descarga en Descargas/SampledHead/MPC Sample y, si se pide, copia en <tarjeta>/Melodee/Plugins). `prepare-suite.js` mete la lista en `config.json` (`mpc`) y los iconos `mpc-<icon>.png`.

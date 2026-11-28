@@ -53,6 +53,9 @@ footer{text-align:center;color:var(--paper);font-size:13px;padding:10px 0 24px;o
   <div class="grid" id="grid"></div>
   <h3 class="sec">PLUGINS PARA TU DAW</h3>
   <div class="grid" id="plugins"></div>
+  <h3 class="sec">PLUGINS PARA MPC SAMPLE (MELODEE)</h3>
+  <p class="note" style="color:var(--paper);margin:-4px 0 12px">Para la MPC Sample con el firmware Melodee. «Copiar a la tarjeta» deja el zip, sin descomprimir, en <b>Melodee/Plugins</b> de la tarjeta SD.</p>
+  <div class="grid" id="mpc"></div>
   <h3 class="sec">AJUSTES</h3>
   <div class="tools">
     <button class="btn" id="bpick">Elegir apps y plugins</button>
@@ -111,9 +114,30 @@ function render() {
     const f = c.querySelector('[data-f]'); if (f) f.onclick = () => shHome.pluginFolder();
     pg.appendChild(c);
   });
+  renderMpc();
   $('#foot').textContent = 'SampledHead v' + S.version + ' · By SampledHead';
 }
 const UPD = {};
+/* 1.0.12: plugins para la MPC Sample (Melodee) */
+let MPC = null;
+const fmtSize = n => n > 1048576 ? (n / 1048576).toFixed(1) + ' MB' : Math.round(n / 1024) + ' KB';
+function renderMpc() {
+  const L = MPC || S.mpc || { plugins: [] }, g = $('#mpc'); g.innerHTML = '';
+  if (!L.plugins || !L.plugins.length) { g.innerHTML = '<p class="note" style="color:#fff">No se pudo cargar la lista de plugins.</p>'; return; }
+  L.plugins.forEach(p => {
+    const c = document.createElement('div'); c.className = 'card'; c.style.cursor = 'default';
+    c.innerHTML = '<img src="icons/mpc-' + esc(p.icon) + '.png" alt="" onerror="this.style.visibility=\'hidden\'"><div style="flex:1"><h2>' + esc(p.name) + '</h2><p>' + esc(p.kind) + ' · ' + esc(p.desc) + '</p><p class="note">v' + esc(p.v) + (p.size ? ' · ' + fmtSize(p.size) : '') + '</p>' +
+      '<p style="margin-top:8px"><button class="btn" data-card>Copiar a la tarjeta SD…</button> <button class="btn" data-dl>Descargar</button></p><p class="note" data-m></p></div>';
+    const out = c.querySelector('[data-m]');
+    const go = async toCard => { out.textContent = 'Descargando…'; c.querySelectorAll('button').forEach(b => b.disabled = true);
+      try { const r = await shHome.mpc(p.file, L.base, toCard); out.textContent = r.canceled ? '' : r.card ? 'Copiado en ' + r.card + '. Expulsa la tarjeta y ponla en la MPC.' : 'Guardado en ' + r.saved; }
+      catch (e) { out.textContent = 'No se pudo: ' + String(e.message || e).replace(/^Error invoking remote method[^:]*: (Error: )?/, ''); }
+      c.querySelectorAll('button').forEach(b => b.disabled = false); };
+    c.querySelector('[data-card]').onclick = () => go(true); c.querySelector('[data-dl]').onclick = () => go(false);
+    g.appendChild(c);
+  });
+}
+if (window.shHome && shHome.mpcList) shHome.mpcList().then(l => { MPC = l; if (S) renderMpc(); }).catch(() => {});
 async function refresh() { S = await shHome.state(); render(); if (S.firstRun) openPick(true); }
 shHome.on('state', d => { S = d; render(); });
 shHome.on('update', d => { UPD[d.id] = 1; render(); });

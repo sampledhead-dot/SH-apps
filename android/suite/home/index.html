@@ -52,6 +52,9 @@ footer{text-align:center;color:var(--paper);font-size:12.5px;padding:8px 0 22px;
 <main>
   <div class="grid" id="grid"></div>
   <p class="note light" style="margin-top:14px">Vuelve aquí con el asa <b>SH</b> del borde izquierdo o con «atrás». Las apps abiertas siguen funcionando mientras usas otra, y lo que envías con «Enviar a…» llega al momento.</p>
+  <h3 class="sec">PLUGINS PARA MPC SAMPLE (MELODEE)</h3>
+  <p class="note light" style="margin:-2px 0 10px">Se descargan en Descargas. Copia el zip, sin descomprimir, en <b>Melodee/Plugins</b> de la tarjeta SD de la MPC Sample.</p>
+  <div class="grid" id="mpc"></div>
   <h3 class="sec">AJUSTES</h3>
   <div class="tools">
     <button class="btn" id="bpick">Elegir apps</button>
@@ -93,6 +96,21 @@ const N = window.SHSuite || null;   // el puente de la app única (en el navegad
 let S = null;
 function state() { try { return JSON.parse(N.state()); } catch (e) { console.error(e); return { version: '?', apps: [], max: 3, first: false }; } }
 const UPD = { 'lista': 'actualización lista', 'aplicada': 'actualizada', 'buscando': 'buscando…', 'error': 'sin conexión', 'vuelta atrás': 'versión anterior' };
+/* plugins para la MPC Sample (Melodee): lista de la web y, sin conexión, la incluida */
+let MPC = null;
+const fmtSize = n => n > 1048576 ? (n / 1048576).toFixed(1) + ' MB' : Math.round(n / 1024) + ' KB';
+function renderMpc() {
+  const g = $('#mpc'); if (!g) return; g.innerHTML = '';
+  if (!MPC || !MPC.plugins || !MPC.plugins.length) { g.innerHTML = '<p class="note light">Cargando la lista de plugins…</p>'; return; }
+  MPC.plugins.forEach(p => {
+    const c = document.createElement('div'); c.className = 'card';
+    c.innerHTML = '<img src="icons/mpc-' + esc(p.icon) + '.png" alt="" onerror="this.style.visibility=\'hidden\'"><div style="flex:1"><h2>' + esc(p.name) + '</h2><p>' + esc(p.kind) + ' · ' + esc(p.desc) + '</p><p class="note">v' + esc(p.v) + (p.size ? ' · ' + fmtSize(p.size) : '') + '</p><p style="margin-top:8px"><button class="btn">Descargar</button></p></div>';
+    c.querySelector('.btn').onclick = () => { const u = MPC.base + p.file; if (N && N.openUrl) N.openUrl(u); else window.open(u, '_blank'); };
+    g.appendChild(c);
+  });
+}
+fetch('mpc.json').then(r => r.json()).then(j => { if (!MPC) { MPC = j; renderMpc(); } }).catch(() => {});
+fetch('https://sampledhead-dot.github.io/SH-apps/melodee/plugins.json?t=' + Date.now()).then(r => r.ok ? r.json() : null).then(j => { if (j && j.plugins) { MPC = j; renderMpc(); } }).catch(() => {});
 function render() {
   S = state();
   const g = $('#grid'); g.innerHTML = '';

@@ -45,6 +45,10 @@ fs.copyFileSync(path.join(REPO, 'sh-core', 'sh-core.js'), path.join(ASSETS, 'hom
 fs.copyFileSync(path.join(REPO, 'logo.png'), path.join(ASSETS, 'home', 'logo.png'));
 fs.mkdirSync(path.join(ASSETS, 'home', 'icons'), { recursive: true });
 for (const a of apps) fs.copyFileSync(path.join(REPO, 'desktop', 'icons', a.id + '.png'), path.join(ASSETS, 'home', 'icons', a.id + '.png'));
+// plugins para la MPC Sample (Melodee): lista incluida (el inicio busca además la de la web) e iconos
+try { fs.copyFileSync(path.join(REPO, 'melodee', 'plugins.json'), path.join(ASSETS, 'home', 'mpc.json'));
+  for (const P of JSON.parse(fs.readFileSync(path.join(REPO, 'melodee', 'plugins.json'), 'utf8')).plugins || []) { const ic = path.join(REPO, 'icons', P.icon + '.png'); if (fs.existsSync(ic)) fs.copyFileSync(ic, path.join(ASSETS, 'home', 'icons', 'mpc-' + P.icon + '.png')); }
+} catch (e) { console.warn('Sin plugins MPC: ' + e.message); }
 
 // manifiesto (con la lista de apps sueltas que puede ver, para pedirles sus datos) e iconos del lanzador
 const pk = apps.map(a => '        <package android:name="com.sampledhead.' + a.id + '" />').join('\n');

@@ -267,7 +267,7 @@ function shortcut(e, inp) {
 }
 function state() {
   return { version: CFG.version, current: cur, platform: process.platform, arch: process.arch, apps: CFG.apps.map(a => ({ id: a.id, name: a.name, desc: a.desc, color: a.color, chosen: !PREF.apps || PREF.apps.includes(a.id), open: !!VIEWS[a.id],
-    content: UPD[a.id] ? UPD[a.id].sha().slice(0, 7) : '' })), plugins: CFG.plugins.map(p => Object.assign({}, p, { installed: pluginInstalled(p) })),
+    content: UPD[a.id] ? UPD[a.id].sha().slice(0, 7) : '' })), plugins: CFG.plugins.map(p => Object.assign({}, p, { installed: pluginInstalled(p) })), mpc: CFG.mpc || { base: '', plugins: [] },
     firstRun: !PREF.apps, imported: PREF.imported, legacy: legacyApps(), folder: SHARED.paths().ROOT };
 }
 const homeSend = (ch, d) => { try { if (home && !home.webContents.isDestroyed()) home.webContents.send(ch, d); } catch (e) {} };
@@ -388,6 +388,29 @@ function homeIpc() {
   h('home:pluginFolder', () => { const d = pluginDirs(); shell.openPath(fs.existsSync(d.vst3) ? d.vst3 : (d.vst3User || d.vst3)); return true; });
   h('home:updates', () => checkUpdates(true));
   h('home:report', () => saveReport('informe manual (inicio)', null, true));
+  /* 1.0.12: plugins para la MPC Sample (Melodee): lista en línea (si falla, la incluida), descarga y copia a la tarjeta */
+  h('home:mpcList', async () => {
+    try { const r = await net.fetch('https://sampledhead-dot.github.io/SH-apps/melodee/plugins.json?t=' + Date.now()); if (r.ok) { const j = await r.json(); if (j && Array.isArray(j.plugins)) return j; } } catch (e) { log('aviso', 'lista MPC en línea: ' + e.message); }
+    return CFG.mpc || { base: '', plugins: [] };
+  });
+  h('home:mpc', async (wc, file, base, toCard) => {
+    if (!/^[\w.-]+\.zip$/.test(file)) throw new Error('Nombre de archivo no válido');
+    if (!/^https:\/\/sampledhead-dot\.github\.io\//.test(base)) throw new Error('Dirección no válida');
+    let cardDir = null;
+    if (toCard) {
+      const r = await dialog.showOpenDialog(win, { title: 'Elige la tarjeta SD de la MPC Sample (o su carpeta Melodee/Plugins)', properties: ['openDirectory', 'createDirectory'] });
+      if (r.canceled || !r.filePaths[0]) return { canceled: true };
+      const pick = r.filePaths[0], nm = path.basename(pick).toLowerCase();
+      cardDir = nm === 'plugins' ? pick : nm === 'melodee' ? path.join(pick, 'Plugins') : path.join(pick, 'Melodee', 'Plugins');
+    }
+    step('Descargando plugin MPC ' + file);
+    const res = await net.fetch(base + file); if (!res.ok) throw new Error('HTTP ' + res.status + ' al descargar ' + file);
+    const buf = Buffer.from(await res.arrayBuffer());
+    const dl = path.join(app.getPath('downloads'), 'SampledHead', 'MPC Sample'); fs.mkdirSync(dl, { recursive: true });
+    const saved = path.join(dl, file); fs.writeFileSync(saved, buf);
+    if (cardDir) { fs.mkdirSync(cardDir, { recursive: true }); fs.writeFileSync(path.join(cardDir, file), buf); step('Plugin MPC copiado en ' + cardDir); return { saved, card: cardDir }; }
+    shell.showItemInFolder(saved); return { saved };
+  });
   h('home:web', (wc, id) => { const a = appCfg(id); shell.openExternal(a ? a.webUrl : 'https://sampledhead-dot.github.io/SH-apps/'); return true; });
 }
 
@@ -490,6 +513,12 @@ if (SELFTEST) { app.commandLine.appendSwitch('use-fake-device-for-media-stream')
 app.whenReady().then(() => {
   step('Arrancando SampledHead v' + CFG.version);
   loadPref(); if (SELFTEST && !PREF.apps) PREF.apps = CFG.apps.map(a => a.id);
+  /* 1.0.12: las apps nuevas aparecen solas. «known» guarda las apps que ya existían; las que no estén se añaden a las elegidas.
+     Migración: antes no había «known»; se toman como conocidas todas menos las añadidas después (NEW_APPS). */
+  { const NEW_APPS = ['pockethead'], ids = CFG.apps.map(a => a.id);
+    if (!Array.isArray(PREF.known)) PREF.known = ids.filter(id => !NEW_APPS.includes(id));
+    const nuevas = ids.filter(id => !PREF.known.includes(id));
+    if (nuevas.length) { if (PREF.apps) for (const id of nuevas) if (!PREF.apps.includes(id)) PREF.apps.push(id); PREF.known = ids; savePref(); step('Apps nuevas añadidas a las elegidas: ' + nuevas.join(', ')); } }
   importPending();
   makeUpdaters();
   SHARED.setup({ cfg: { id: 'suite', name: 'SampledHead', productName: 'SampledHead', wrapperVersion: CFG.version }, log, step,

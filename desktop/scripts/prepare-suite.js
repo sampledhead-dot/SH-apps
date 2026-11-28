@@ -34,6 +34,9 @@ for (const A of LIST.apps) {
 }
 // iconos de los plugins sin app propia (p. ej. TapeHead)
 for (const P of LIST.plugins || []) { const ic = path.join(ROOT, 'icons', P.app + '.png'), dst = path.join(out, 'home', 'icons', P.app + '.png'); if (fs.existsSync(ic) && !fs.existsSync(dst)) fs.copyFileSync(ic, dst); }
+// 1.0.12: plugins para la MPC Sample (Melodee): lista de ../melodee/plugins.json (el programa busca además la versión en línea) e iconos
+let MPC = { base: '', plugins: [] }; try { MPC = JSON.parse(fs.readFileSync(path.join(ROOT, '..', 'melodee', 'plugins.json'), 'utf8')); } catch (e) { console.warn('Sin melodee/plugins.json'); }
+for (const P of MPC.plugins || []) { const ic = path.join(ROOT, '..', 'icons', P.icon + '.png'), dst = path.join(out, 'home', 'icons', 'mpc-' + P.icon + '.png'); if (fs.existsSync(ic)) fs.copyFileSync(ic, dst); }
 const version = LIST.suiteVersion || '1.0.0';
 let self = ''; try { self = cp.execSync('git -C "' + ROOT + '" rev-parse --short HEAD', { stdio: ['ignore', 'pipe', 'ignore'] }).toString().trim(); } catch (e) {}
 for (const f of ['main.js', 'home-preload.js']) fs.copyFileSync(path.join(ROOT, 'suite', f), path.join(out, f));
@@ -42,7 +45,7 @@ for (const f of ['updater.js', 'shared.js', 'preload.js']) fs.copyFileSync(path.
 copy(path.join(ROOT, 'app', 'engine'), path.join(out, 'engine'));
 fs.copyFileSync(path.join(ROOT, '..', 'logo.png'), path.join(out, 'home', 'logo.png'));
 fs.copyFileSync(path.join(ROOT, '..', 'icon-512.png'), path.join(out, 'icon.png'));
-fs.writeFileSync(path.join(out, 'config.json'), JSON.stringify({ version, buildId: version + '+' + (self || 'local'), apps, plugins: LIST.plugins || [] }, null, 2));
+fs.writeFileSync(path.join(out, 'config.json'), JSON.stringify({ version, buildId: version + '+' + (self || 'local'), apps, plugins: LIST.plugins || [], mpc: MPC }, null, 2));
 const art = 'SampledHead-' + version;
 fs.writeFileSync(path.join(out, 'package.json'), JSON.stringify({
   name: 'sampledhead', productName: 'SampledHead', version, main: 'main.js', description: 'Todas las apps de Sampled Head en un solo programa',

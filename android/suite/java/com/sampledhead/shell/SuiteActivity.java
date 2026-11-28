@@ -211,6 +211,20 @@ public class SuiteActivity extends Activity {
 
     // ---------------------------------------------------------------- estado para el inicio
     int maxOpen() { return prefs.getInt("maximo", 3); }
+    /** Apps añadidas al programa después de que existiera la lista «conocidas» (migración). */
+    static final String[] NEW_APPS = {"pockethead"};
+    /** Las apps nuevas que trae una versión del programa se añaden solas a las elegidas (antes había que marcarlas en «Elegir apps»). */
+    void addNewApps() {
+        String c = prefs.getString("elegidas", null), k = prefs.getString("conocidas", null);
+        java.util.Set<String> known = new java.util.LinkedHashSet<>();
+        if (k == null) { known.addAll(apps.keySet()); for (String n : NEW_APPS) known.remove(n); }
+        else for (String x : k.split(",")) if (!x.trim().isEmpty()) known.add(x.trim());
+        List<String> nuevas = new ArrayList<>(); for (String id : apps.keySet()) if (!known.contains(id)) nuevas.add(id);
+        if (nuevas.isEmpty() && k != null) return;
+        SharedPreferences.Editor e = prefs.edit().putString("conocidas", android.text.TextUtils.join(",", apps.keySet()));
+        if (c != null && !nuevas.isEmpty()) { StringBuilder b = new StringBuilder(c); for (String n : nuevas) if (!(","+c+",").contains(","+n+",")) b.append(b.length() > 0 ? "," : "").append(n); e.putString("elegidas", b.toString()); }
+        e.apply(); if (!nuevas.isEmpty()) step("Apps nuevas añadidas a las elegidas: " + nuevas);
+    }
     List<String> chosen() {
         String c = prefs.getString("elegidas", null); List<String> out = new ArrayList<>();
         if (c == null) { out.addAll(apps.keySet()); return out; }
@@ -458,7 +472,7 @@ public class SuiteActivity extends Activity {
         Thread.setDefaultUncaughtExceptionHandler((t, e) -> { saveReport("excepción no capturada (" + t.getName() + ")", e, null, false); android.os.Process.killProcess(android.os.Process.myPid()); System.exit(10); });
         prefs = getSharedPreferences("suite", MODE_PRIVATE);
         step("Arrancando SampledHead (app única) v" + versionName());
-        loadApps();
+        loadApps(); addNewApps();
         for (AppInfo a : apps.values()) {
             final String id = a.id;
             upds.put(id, new Updater(a.repo, a.exclude, rel -> getAssets().open("apps/" + id + "/" + rel), a.sha, new File(getFilesDir(), "apps/" + id), (k, m) -> log(k, id + ": " + m)));
